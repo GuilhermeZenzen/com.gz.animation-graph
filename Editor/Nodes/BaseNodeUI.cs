@@ -15,6 +15,8 @@ namespace GZ.AnimationGraph.Editor
         protected TextField _nameField;
         protected FloatField _speedField;
 
+        public Port OutputPort { get; private set; }
+
         protected virtual string DefaultName => "Node";
 
         public BaseNodeUI()
@@ -70,10 +72,10 @@ namespace GZ.AnimationGraph.Editor
 
         protected virtual void GenerateOutputPort(Color portColor = default)
         {
-            var outputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(BaseNode));
-            outputPort.portName = "";
-            outputPort.portColor = portColor;
-            outputContainer.Add(outputPort);
+            OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(BaseNode));
+            OutputPort.portName = "";
+            OutputPort.portColor = portColor;
+            outputContainer.Add(OutputPort);
 
             RefreshExpandedState();
             RefreshPorts();

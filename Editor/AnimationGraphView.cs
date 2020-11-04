@@ -8,6 +8,9 @@ namespace GZ.AnimationGraph.Editor
 {
     public class AnimationGraphView : GraphView
     {
+        public OutputNodeUI OutputIndicatorNode;
+        public BaseNodeUI OutputNode;
+
         public AnimationGraphView()
         {
             SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
@@ -45,7 +48,7 @@ namespace GZ.AnimationGraph.Editor
 
             ports.ForEach(port =>
             {
-                if (startPort != port && startPort.node != port.node && startPort.direction != port.direction)
+                if (startPort != port && startPort.node != port.node && startPort.direction != port.direction && startPort.node != OutputNode)
                 {
                     compatiblePorts.Add(port);
                 }

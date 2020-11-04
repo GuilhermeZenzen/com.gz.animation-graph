@@ -178,6 +178,25 @@ namespace GZ.AnimationGraph.Editor
             {
                 entry.Value.LoadData(GraphView, entry.Key, nodeMap);
             }
+
+            if (asset.OutputIndicatorNode != null)
+            {
+                var outputIndicatorNode = new OutputNodeUI();
+                GraphView.OutputIndicatorNode = outputIndicatorNode;
+                GraphView.AddNode(outputIndicatorNode);
+                outputIndicatorNode.SetPosition(new Rect(asset.OutputIndicatorNode.Position, Vector2.zero));
+                outputIndicatorNode.expanded = asset.OutputIndicatorNode.IsExpanded;
+
+                if (asset.OutputNode != null)
+                {
+                    BaseNodeUI outputNode = nodeMap[asset.OutputNode];
+                    Edge edge = new Edge { output = outputNode.OutputPort, input = outputIndicatorNode.InputPort };
+                    edge.input.Connect(edge);
+                    edge.output.Connect(edge);
+                    GraphView.AddElement(edge);
+                    GraphView.OutputNode = outputNode;
+                }
+            }
         }
 
         private void CloseAnimationGraph()
@@ -203,7 +222,8 @@ namespace GZ.AnimationGraph.Editor
 
             GraphView.nodes.ForEach(n =>
             {
-                BaseNodeUI nodeUI = (BaseNodeUI)n;
+                if (!(n is BaseNodeUI nodeUI)) { return; }
+
                 NodeAsset nodeAsset = nodeUI.GenerateData();
                 nodeAsset.Position = n.GetPosition().position;
                 nodeAsset.IsExpanded = n.expanded;
@@ -213,8 +233,25 @@ namespace GZ.AnimationGraph.Editor
 
             GraphView.nodes.ForEach(n =>
             {
-                ((BaseNodeUI)n).GenerateLinkData(nodeUIMap[n], nodeUIMap);
+                if (!(n is BaseNodeUI nodeUI)) { return; }
+
+                nodeUI.GenerateLinkData(nodeUIMap[n], nodeUIMap);
             });
+
+            if (GraphView.OutputIndicatorNode != null)
+            {
+                AnimationGraphAsset.OutputIndicatorNode = new NodeAsset { Position = GraphView.OutputIndicatorNode.GetPosition().position, IsExpanded = GraphView.OutputIndicatorNode.expanded };
+
+                if (GraphView.OutputNode != null)
+                {
+                    AnimationGraphAsset.OutputNode = nodeUIMap[GraphView.OutputNode];
+                }
+            }
+            else
+            {
+                AnimationGraphAsset.OutputIndicatorNode = null;
+                AnimationGraphAsset.OutputNode = null;
+            }
 
             EditorUtility.SetDirty(AnimationGraphAsset);
             AssetDatabase.SaveAssets();
@@ -233,6 +270,11 @@ namespace GZ.AnimationGraph.Editor
                 new SearchTreeEntry(new GUIContent("2D Blendspace")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("State Machine")) { level = 1 },
             };
+
+            if (GraphView.OutputIndicatorNode == null)
+            {
+                tree.Add(new SearchTreeEntry(new GUIContent("Output")) { level = 1 });
+            }
 
             return tree;
         }
@@ -266,6 +308,10 @@ namespace GZ.AnimationGraph.Editor
                 case "State Machine":
                     node = new StateMachineNodeUI();
 
+                    break;
+                case "Output":
+                    node = new OutputNodeUI();
+                    GraphView.OutputIndicatorNode = (OutputNodeUI)node;
                     break;
                 default:
                     break;
