@@ -1,0 +1,15 @@
+{
+    "name": "com.gz.animation-graph",
+    "references": [
+        "GUID:dd976ea618259f94086741182982b10b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

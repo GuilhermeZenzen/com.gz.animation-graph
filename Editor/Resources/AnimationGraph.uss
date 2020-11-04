@@ -1,0 +1,27 @@
+﻿GridBackground {
+    --grid-background-color: #282828;
+    --line-color: rgba(193, 196, 192, 0.1);
+    --thick-line-color: rgba(193, 196, 192, 0.1);
+    --spacing: 10;
+}
+
+.node #title {
+    height: 54px;
+}
+
+.node #title TextField {
+    max-height: 22px;
+    min-width: 70px;
+}
+
+.node .speed-field FloatInput {
+    min-width: 30px;
+}
+
+LayerMixerNodeUI EnumField {
+    width: 70px;
+}
+
+LayerMixerNodeUI ObjectField {
+    width: 155px;
+}

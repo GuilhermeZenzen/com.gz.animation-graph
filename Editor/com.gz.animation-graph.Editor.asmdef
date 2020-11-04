@@ -1,0 +1,18 @@
+{
+    "name": "com.gz.animation-graph.Editor",
+    "references": [
+        "GUID:dd976ea618259f94086741182982b10b",
+        "GUID:35334a5f7f97b074889aab1d9913cd53"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

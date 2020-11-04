@@ -1,0 +1,139 @@
+﻿GridBackground {
+    --grid-background-color: #282828;
+    --line-color: rgba(193, 196, 192, 0.1);
+    --thick-line-color: rgba(193, 196, 192, 0.1);
+    --spacing: 10;
+}
+
+StateNodeUI #title, ParameterNodeUI #title {
+    height: 54px;
+}
+
+StateNodeUI #title TextField, ParameterNodeUI #title TextField {
+    max-height: 22px;
+    min-width: 70px;
+}
+
+ParameterNodeUI EnumField {
+    width: 60px;
+}
+
+ParameterNodeUI IntegerField {
+    min-width: 50px;
+}
+
+ParameterNodeUI FloatField {
+    min-width: 50px;
+}
+
+ParameterNodeUI.bool IntegerField, ParameterNodeUI.bool FloatField {
+    display: none;
+}
+
+ParameterNodeUI.int Toggle, ParameterNodeUI.int FloatField {
+    display: none;
+}
+
+ParameterNodeUI.float Toggle, ParameterNodeUI.float IntegerField {
+    display: none;
+}
+
+ParameterNodeUI.trigger Toggle, ParameterNodeUI.trigger IntegerField, ParameterNodeUI.trigger FloatField {
+    display: none;
+}
+
+TransitionConditionInputNodePort EnumField,
+TransitionConditionInputNodePort IntegerField,
+TransitionConditionInputNodePort FloatField {
+    display: none;
+}
+
+TransitionConditionInputNodePort.bool-provider .bool-comparison-value {
+    display: flex;
+    width: 50px;
+}
+
+TransitionConditionInputNodePort.int-provider .int-comparison {
+    display: flex;
+    width: 120px;
+}
+
+TransitionConditionInputNodePort.int-provider IntegerField {
+    display: flex;
+    min-width: 35px;
+}
+
+TransitionConditionInputNodePort.float-provider .float-comparison {
+    display: flex;
+    width: 120px;
+}
+
+TransitionConditionInputNodePort.float-provider FloatField {
+    display: flex;
+    min-width: 35px;
+}
+
+AnyStateNodeUI Port EnumField {
+    width: 155px;
+}
+
+.node #title {
+    background-color: #3F3F3F;
+}
+
+.node #contents #top > #input {
+    background-color: #3F3F3F;
+}
+
+.node #contents #top > #output {
+    background-color: #2E2E2E;
+}
+
+.node #extension {
+    background-color: #2E2E2E;
+}
+
+StateNodeUI Foldout {
+    padding-right: 15px;
+}
+
+AnyStateNodeUI Foldout {
+    padding-right: 15px;
+}
+
+StateNodeUITransitionItem {
+    height: 23px;
+    flex-direction: row;
+    background-color: #3F3F3F;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+StateNodeUITransitionItem:hover {
+    background-color: #4F4F4F;
+}
+
+StateNodeUITransitionItem > Label {
+    flex: 1;
+    -unity-text-align: middle-left;
+    margin-right: 4px;
+}
+
+StateNodeUITransitionItem > Button.unity-button {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+StateNodeUITransitionItem.first > Button.move-up {
+    display: none;
+}
+
+StateNodeUITransitionItem.last > Button.move-down {
+    display: none;
+}
+
+TransitionConnectionUI.transition-connection {
+    margin: 0px;
+    padding: 0px;
+    border-width: 0px;
+}
