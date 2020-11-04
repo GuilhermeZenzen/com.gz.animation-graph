@@ -2,7 +2,7 @@
   "name": "com.gz.animation-graph",
   "version": "1.0.0",
   "displayName": "Animation Graph",
-  "description": "Animation controlled by nodes and connections",
+  "description": "Graph solution to Unity animation using Playable API",
   "unity": "2019.4",
   "dependencies": {},
   "keywords": [
