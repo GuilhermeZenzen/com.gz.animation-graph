@@ -16,7 +16,7 @@ namespace GZ.AnimationGraph
         public LayerMixerNodeInputPort CreateInputPort(LayerBlendMode blendMode, float weight = 1f, AvatarMask avatarMask = null)
         {
             LayerMixerNodeInputPort port = new LayerMixerNodeInputPort { Node = this, Weight = weight, BlendMode = blendMode, AvatarMask = avatarMask };
-            SetupInputPort(port);
+            SetupInputPort(port, weight);
             
             SetBlendMode(port, blendMode);
             SetAvatarMask(port, avatarMask);
@@ -24,7 +24,7 @@ namespace GZ.AnimationGraph
             return port;
         }
 
-        public override NodeInputPort OnCreateBaseInputPort(float weight) => new LayerMixerNodeInputPort() { Weight = weight };
+        public override NodeInputPort OnCreateBaseInputPort() => new LayerMixerNodeInputPort();
 
         public override void DestroyInputPort(int inputPortIndex)
         {

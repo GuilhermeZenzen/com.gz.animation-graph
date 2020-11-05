@@ -55,6 +55,8 @@ namespace GZ.AnimationGraph
 
         #endregion
 
+        public void SetOutput(BaseNode node) => Graph.SetOutput(node);
+
         #region Asset
 
         public void LoadAsset(AnimationGraphAsset asset) => Graph.LoadAsset(asset);
