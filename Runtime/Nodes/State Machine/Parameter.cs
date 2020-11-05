@@ -10,7 +10,7 @@ namespace GZ.AnimationGraph
 
         public string Name;
 
-        private ValueProviderType _type = ValueProviderType.Bool;
+        [SerializeField] private ValueProviderType _type = ValueProviderType.Bool;
         public ValueProviderType Type
         {
             get => _type;
