@@ -430,6 +430,47 @@ namespace GZ.AnimationGraph
             return state;
         }
 
+        public State RemoveState(string stateName)
+        {
+            if (!States.ContainsKey(stateName)) { return null; }
+
+            State state = States[stateName];
+            RemovePlayableInput(Playable, States.Values.IndexOf(state));
+            States.Remove(stateName);
+
+            return state;
+        }
+
+        private void RemovePlayableInput(Playable playable, int index)
+        {
+            int FindPlayableOutput(Playable outputPlayable, Playable inputPlayable)
+            {
+                int outputCount = outputPlayable.GetOutputCount();
+
+                for (int i = 0; i < outputCount; i++)
+                {
+                    if (outputPlayable.GetOutput(i).Equals(inputPlayable))
+                    {
+                        return i;
+                    }    
+                }
+
+                return -1;
+            }
+
+            playable.DisconnectInput(index);
+            int newInputCount = playable.GetInputCount() - 1;
+
+            for (int i = index; i < newInputCount; i++)
+            {
+                Playable outputPlayable = playable.GetInput(i + 1);
+                playable.ConnectInput(i, outputPlayable, FindPlayableOutput(outputPlayable, playable), playable.GetInputWeight(i + 1));
+                playable.DisconnectInput(i + 1);
+            }
+
+            playable.SetInputCount(newInputCount);
+        }
+
         public void SetDefaultState(string stateName)
         {
             Assert.IsTrue(States.ContainsKey(stateName), $"Failed to set default state because the state machine {Name} doesn't contain an state called {stateName}");
