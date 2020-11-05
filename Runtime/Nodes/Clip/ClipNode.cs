@@ -17,11 +17,15 @@ namespace GZ.AnimationGraph
             set
             {
                 _clip = value;
-                CreatePlayable(Playable.GetGraph());
 
-                foreach (var outputPort in OutputPorts)
+                if (!Playable.Equals(Playable.Null))
                 {
-                    outputPort.Link.InputPort.Node.UpdateConnection(outputPort.Link);
+                    CreatePlayable(Playable.GetGraph());
+
+                    foreach (var outputPort in OutputPorts)
+                    {
+                        outputPort.Link.InputPort.Node.UpdateConnection(outputPort.Link);
+                    }
                 }
             }
         }

@@ -1,4 +1,5 @@
 ﻿using ICSharpCode.NRefactory.Ast;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -225,6 +226,7 @@ namespace GZ.AnimationGraph.Editor
                 if (!(n is BaseNodeUI nodeUI)) { return; }
 
                 NodeAsset nodeAsset = nodeUI.GenerateData();
+                nodeAsset.ID = nodeUI.ID;
                 nodeAsset.Position = n.GetPosition().position;
                 nodeAsset.IsExpanded = n.expanded;
                 AnimationGraphAsset.Nodes.Add(nodeAsset);
@@ -315,6 +317,11 @@ namespace GZ.AnimationGraph.Editor
                     break;
                 default:
                     break;
+            }
+
+            if (node is BaseNodeUI baseNode)
+            {
+                baseNode.ID = Guid.NewGuid().ToString();
             }
 
             GraphView.AddNode(node, context.screenMousePosition);

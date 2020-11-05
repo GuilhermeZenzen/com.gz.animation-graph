@@ -12,6 +12,8 @@ namespace GZ.AnimationGraph.Editor
 {
     public abstract class BaseNodeUI : Node
     {
+        public string ID;
+
         protected TextField _nameField;
         protected FloatField _speedField;
 
@@ -87,6 +89,8 @@ namespace GZ.AnimationGraph.Editor
 
         public virtual void LoadData(AnimationGraphView graphView, NodeAsset nodeAsset, Dictionary<NodeAsset, BaseNodeUI> nodeMap)
         {
+            ID = string.IsNullOrEmpty(nodeAsset.ID) ? Guid.NewGuid().ToString() : nodeAsset.ID;
+
             _nameField.SetValueWithoutNotify(string.IsNullOrEmpty(nodeAsset.Data.Name) ? DefaultName : nodeAsset.Data.Name);
             _speedField.SetValueWithoutNotify(nodeAsset.Data.Speed);
         }

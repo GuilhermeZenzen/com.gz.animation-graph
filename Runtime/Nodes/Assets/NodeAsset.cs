@@ -9,6 +9,8 @@ namespace GZ.AnimationGraph
     [Serializable]
     public class NodeAsset
     {
+        public string ID;
+
         public Vector2 Position;
         public bool IsExpanded;
 
