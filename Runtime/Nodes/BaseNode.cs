@@ -71,7 +71,7 @@ namespace GZ.AnimationGraph
             return (rawDuration, duration);
         }
 
-        public void SetupInputPort(NodeInputPort inputPort)
+        public void SetupInputPort(NodeInputPort inputPort, float weight)
         {
             inputPort.Node = this;
             inputPort.Index = InputPorts.Count;
@@ -79,17 +79,21 @@ namespace GZ.AnimationGraph
             Playable.SetInputWeight(inputPort.Index, inputPort.Weight);
 
             InputPorts.Add(inputPort);
+
+            OnSetupBaseInputPort(inputPort, weight);
         }
 
         public NodeInputPort CreateBaseInputPort(float weight)
         {
-            NodeInputPort port = OnCreateBaseInputPort(weight);
-            SetupInputPort(port);
+            NodeInputPort port = OnCreateBaseInputPort();
+            SetupInputPort(port, weight);
 
             return port;
         }
 
-        public virtual NodeInputPort OnCreateBaseInputPort(float weight) => new NodeInputPort() { Weight = weight };
+        public virtual NodeInputPort OnCreateBaseInputPort() => new NodeInputPort();
+
+        public virtual void OnSetupBaseInputPort(NodeInputPort inputPort, float weight) => inputPort.Weight = weight;
 
         public NodeOutputPort CreateOutputPort()
         {

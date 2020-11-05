@@ -391,6 +391,7 @@ namespace GZ.AnimationGraph
                 if (!Playable.Equals(Playable.Null))
                 {
                     Playable.SetInputWeight(0, 1f);
+                    CreateBaseInputPort(1f);
                 }
             }
 
@@ -413,13 +414,15 @@ namespace GZ.AnimationGraph
 
                 if (!Playable.Equals(Playable.Null))
                 {
-                    Playable.SetInputWeight(0, 1f);
+                    CreateBaseInputPort(1f);
+                    //Playable.SetInputWeight(0, 1f);
                 }
             }
 
             if (!Playable.Equals(Playable.Null))
             {
-                Playable.SetInputCount(Playable.GetInputCount() + 1);
+                CreateBaseInputPort(0f);
+                //Playable.SetInputCount(Playable.GetInputCount() + 1);
             }
 
             States.Add(state.Name, state);
@@ -437,19 +440,11 @@ namespace GZ.AnimationGraph
             Playable.GetInput(index).Play();
         }
 
-        public override NodeInputPort OnCreateBaseInputPort(float weight)
-        {
-            var port = new NodeInputPort();
-            port.Weight = States.At(InputPorts.Count) == EntryState ? 1f : 0f;
-
-            return port;
-        }
-
         public override NodeLink Connect(NodeInputPort inputPort, NodeOutputPort outputPort)
         {
             outputPort.Node.Playable.SetTime(0f);
 
-            if (States.At(inputPort.Index) == EntryState)
+            if (States.At(inputPort.Index) == CurrentState || States.At(inputPort.Index) == NextState)
             {
                 outputPort.Node.Playable.Play();
             }
@@ -457,6 +452,8 @@ namespace GZ.AnimationGraph
             {
                 outputPort.Node.Playable.Pause();
             }
+
+            inputPort.Weight = inputPort.Weight;
 
             return base.Connect(inputPort, outputPort);
         }
