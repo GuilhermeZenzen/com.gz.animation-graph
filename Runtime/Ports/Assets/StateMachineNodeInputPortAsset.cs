@@ -9,7 +9,8 @@ namespace GZ.AnimationGraph
 
         public override NodeInputPort CreatePort(BaseNode node)
         {
-            return node.CreateBaseInputPort(0f);
+            var stateMachine = (StateMachineNode)node;
+            return stateMachine.States[StateName].InputPort;
         }
     }
 }

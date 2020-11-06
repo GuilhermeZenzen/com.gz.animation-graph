@@ -12,6 +12,8 @@ namespace GZ.AnimationGraph
 
         public string Name;
 
+        public NodeInputPort InputPort;
+
         [SerializeReference]
         public List<Transition> EntryTransitions = new List<Transition>();
 

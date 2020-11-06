@@ -382,17 +382,11 @@ namespace GZ.AnimationGraph
             {
                 CurrentState = state;
 
-                if (!Playable.Equals(Playable.Null))
-                {
-                    //Playable.SetInputWeight(0, 1f);
-                    CreateBaseInputPort(1f);
-                }
+                state.InputPort = CreateBaseInputPort(1f);
             }
-
-            if (!Playable.Equals(Playable.Null))
+            else
             {
-                CreateBaseInputPort(0f);
-                //Playable.SetInputCount(Playable.GetInputCount() + 1);
+                state.InputPort = CreateBaseInputPort(0f);
             }
 
             States.Add(state.Name, state);
@@ -407,17 +401,11 @@ namespace GZ.AnimationGraph
             {
                 CurrentState = state;
 
-                if (!Playable.Equals(Playable.Null))
-                {
-                    CreateBaseInputPort(1f);
-                    //Playable.SetInputWeight(0, 1f);
-                }
+                state.InputPort = CreateBaseInputPort(1f);
             }
-
-            if (!Playable.Equals(Playable.Null))
+            else
             {
-                CreateBaseInputPort(0f);
-                //Playable.SetInputCount(Playable.GetInputCount() + 1);
+                state.InputPort = CreateBaseInputPort(0f);
             }
 
             States.Add(state.Name, state);
@@ -483,7 +471,6 @@ namespace GZ.AnimationGraph
             if (States.At(inputPort.Index) == CurrentState)
             {
                 outputPort.Node.Playable.Play();
-                inputPort.Weight = 1f;
             }
             else if (States.At(inputPort.Index) == NextState)
             {
@@ -493,6 +480,8 @@ namespace GZ.AnimationGraph
             {
                 outputPort.Node.Playable.Pause();
             }
+
+            inputPort.Weight = inputPort.Weight;
 
             return base.Connect(inputPort, outputPort);
         }
@@ -557,6 +546,13 @@ namespace GZ.AnimationGraph
         protected override Playable OnCreatePlayable(PlayableGraph playableGraph)
         {
             AnimationMixerPlayable playable = AnimationMixerPlayable.Create(playableGraph);
+
+            playable.SetInputCount(InputPorts.Count);
+
+            InputPorts.ForEach(inputPort =>
+            {
+                inputPort.Weight = inputPort.Weight;
+            });
 
             return playable;
         }

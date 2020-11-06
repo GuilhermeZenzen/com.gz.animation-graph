@@ -75,8 +75,12 @@ namespace GZ.AnimationGraph
         {
             inputPort.Node = this;
             inputPort.Index = InputPorts.Count;
-            Playable.SetInputCount(Playable.GetInputCount() + 1);
-            Playable.SetInputWeight(inputPort.Index, inputPort.Weight);
+
+            if (!Playable.Equals(Playable.Null))
+            {
+                Playable.SetInputCount(Playable.GetInputCount() + 1);
+                Playable.SetInputWeight(inputPort.Index, inputPort.Weight);
+            }
 
             InputPorts.Add(inputPort);
 
