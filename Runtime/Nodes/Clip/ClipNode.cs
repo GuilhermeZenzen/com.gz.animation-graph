@@ -39,7 +39,7 @@ namespace GZ.AnimationGraph
 
         public override (float rawDuration, float duration) CalculateDuration()
         {
-            return (_clip.length, _clip.length);
+            return _clip != null ? (_clip.length, _clip.length) : (float.PositiveInfinity, float.PositiveInfinity);
         }
     }
 }

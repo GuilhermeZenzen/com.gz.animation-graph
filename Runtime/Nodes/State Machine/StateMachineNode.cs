@@ -289,8 +289,13 @@ namespace GZ.AnimationGraph
                     if (i == TransitionDestinationIndex) { continue; }
 
                     InputPorts[i].Weight = 0f;
-                    Playable.GetInput(i).Pause();
-                    Playable.GetInput(i).SetTime(0f);
+
+                    Playable inputPlayable = Playable.GetInput(i);
+                    if (!inputPlayable.Equals(Playable.Null))
+                    {
+                        inputPlayable.Pause();
+                        inputPlayable.GetInput(i).SetTime(0f);
+                    }
                     ResetState(States.At(i));
                 }
 
