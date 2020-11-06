@@ -259,7 +259,6 @@ namespace GZ.AnimationGraph
             {
                 if (i == TransitionDestinationIndex) continue;
 
-                //float inputWeight = Playable.GetInputWeight(i);
                 float inputWeight = InputPorts[i].Weight;
 
                 if (inputWeight <= 0f) { continue; }
@@ -268,7 +267,6 @@ namespace GZ.AnimationGraph
 
                 if (newInputWeight <= 0f)
                 {
-                    //Playable.SetInputWeight(i, 0f);
                     InputPorts[i].Weight = 0f;
                     Playable.GetInput(i).Pause();
                     Playable.GetInput(i).SetTime(0f);
@@ -278,7 +276,6 @@ namespace GZ.AnimationGraph
                 }
 
                 InputPorts[i].Weight = newInputWeight;
-                //Playable.SetInputWeight(i, newInputWeight);
             }
 
             if (newTransitionProgress >= 1f)
@@ -287,14 +284,12 @@ namespace GZ.AnimationGraph
                 {
                     if (i == TransitionDestinationIndex) { continue; }
 
-                    //Playable.SetInputWeight(i, 0f);
                     InputPorts[i].Weight = 0f;
                     Playable.GetInput(i).Pause();
                     Playable.GetInput(i).SetTime(0f);
                     ResetState(States.At(i));
                 }
 
-                //Playable.SetInputWeight(TransitionDestinationIndex, 1f);
                 InputPorts[TransitionDestinationIndex].Weight = 1f;
 
                 if (CurrentTransition.PlayAfterTransition)
@@ -308,7 +303,6 @@ namespace GZ.AnimationGraph
             }
             else
             {
-                //Playable.SetInputWeight(TransitionDestinationIndex, newTransitionProgress);
                 InputPorts[TransitionDestinationIndex].Weight = newTransitionProgress;
             }
         }
@@ -390,14 +384,15 @@ namespace GZ.AnimationGraph
 
                 if (!Playable.Equals(Playable.Null))
                 {
-                    Playable.SetInputWeight(0, 1f);
+                    //Playable.SetInputWeight(0, 1f);
                     CreateBaseInputPort(1f);
                 }
             }
 
             if (!Playable.Equals(Playable.Null))
             {
-                Playable.SetInputCount(Playable.GetInputCount() + 1);
+                CreateBaseInputPort(0f);
+                //Playable.SetInputCount(Playable.GetInputCount() + 1);
             }
 
             States.Add(state.Name, state);
@@ -485,7 +480,12 @@ namespace GZ.AnimationGraph
         {
             outputPort.Node.Playable.SetTime(0f);
 
-            if (States.At(inputPort.Index) == CurrentState || States.At(inputPort.Index) == NextState)
+            if (States.At(inputPort.Index) == CurrentState)
+            {
+                outputPort.Node.Playable.Play();
+                inputPort.Weight = 1f;
+            }
+            else if (States.At(inputPort.Index) == NextState)
             {
                 outputPort.Node.Playable.Play();
             }
@@ -493,8 +493,6 @@ namespace GZ.AnimationGraph
             {
                 outputPort.Node.Playable.Pause();
             }
-
-            inputPort.Weight = inputPort.Weight;
 
             return base.Connect(inputPort, outputPort);
         }
@@ -522,14 +520,6 @@ namespace GZ.AnimationGraph
                 if (copiedTransitions.ContainsKey(original)) { return copiedTransitions[original]; }
 
                 Transition transitionCopy = original.Copy(copiedStates, valueProviderCopyMap);
-
-                //for (int i = 0; i < transitionCopy.Conditions.Count; i++)
-                //{
-                //    if (transitionCopy.Conditions[i].ValueProvider == null)
-                //    {
-                //        conditionsToSetValueProvider.Add((transitionCopy.Conditions[i], original.Conditions[i].ValueProvider));
-                //    }
-                //}
 
                 copy.Transitions.Add(transitionCopy);
 
@@ -560,7 +550,6 @@ namespace GZ.AnimationGraph
 
             transitionsToSetSource.ForEach(t => t.copy.SourceState = copiedStates[t.originalSource]);
             transitionsToSetDestination.ForEach(t => t.copy.DestinationState = copiedStates[t.originalDestination]);
-            //conditionsToSetValueProvider.ForEach(c => c.copy.ValueProvider = valueProviderCopyMap[c.originalValueProvider]);
 
             return copy;
         }
