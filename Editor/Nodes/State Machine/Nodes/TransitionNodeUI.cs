@@ -11,7 +11,9 @@ namespace GZ.AnimationGraph.Editor
 {
     public class TransitionNodeUI : StateMachineBaseNodeUI, ITransitionConnectable
     {
+        public EnumField DurationTypeField { get; private set; }
         public FloatField DurationField { get; private set; }
+        public EnumField OffsetTypeField { get; private set; }
         public FloatField OffsetField { get; private set; }
         public EnumField InterruptionSourceField { get; private set; }
         public Toggle OrderedInterruptionToggle { get; private set; }
@@ -38,10 +40,18 @@ namespace GZ.AnimationGraph.Editor
             { text = "+ Condition" };
             inputContainer.Add(addConditionButton);
 
-            DurationField = new FloatField("Duration");
+            DurationTypeField = new EnumField("Duration Type", DurationType.Fixed);
+            DurationTypeField.RegisterValueChangedCallback(e => DurationField.label = (DurationType)e.newValue == DurationType.Fixed ? "Duration (s)" : "Duration (%)");
+            extensionContainer.Add(DurationTypeField);
+
+            DurationField = new FloatField("Duration (s)");
             extensionContainer.Add(DurationField);
 
-            OffsetField = new FloatField("Offset");
+            OffsetTypeField = new EnumField("Offset Type", DurationType.Fixed);
+            OffsetTypeField.RegisterValueChangedCallback(e => OffsetField.label = (DurationType)e.newValue == DurationType.Fixed ? "Offset (s)" : "Offset (%)");
+            extensionContainer.Add(OffsetTypeField);
+
+            OffsetField = new FloatField("Offset (s)");
             extensionContainer.Add(OffsetField);
 
             InterruptionSourceField = new EnumField("Interruption Source", TransitionInterruptionSource.None);
@@ -151,7 +161,9 @@ namespace GZ.AnimationGraph.Editor
                 EntryConnections[0].Source.OnExitConnect(EntryConnections[0]);
             }
 
+            DurationTypeField.value = transition.DurationType;
             DurationField.SetValueWithoutNotify(transition.Duration);
+            OffsetTypeField.value = transition.OffsetType;
             OffsetField.SetValueWithoutNotify(transition.Offset);
             InterruptionSourceField.SetValueWithoutNotify(transition.InterruptionSource);
             OrderedInterruptionToggle.value = transition.OrderedInterruption;

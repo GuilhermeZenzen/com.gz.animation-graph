@@ -47,8 +47,7 @@ namespace GZ.AnimationGraph.Editor
                 // Arrow
                 Vector3 lineCenter = (start + end) / 2f;
                 Vector3 arrowBottom = lineCenter - dir * (k_arrowHeight / 2f);
-                //float arrowHeight = k_arrowSideSize * k_sqrtThree / 2f;
-                //Vector3 arrowBottom = lineCenter - dir * (arrowHeight / 2f);
+
                 vertices[4].position = arrowBottom + normal * (k_arrowWidth / 2f) + z;
                 vertices[5].position = arrowBottom - normal * (k_arrowWidth / 2f) + z;
                 vertices[6].position = lineCenter + dir * (k_arrowHeight / 2f) + z;
@@ -72,7 +71,7 @@ namespace GZ.AnimationGraph.Editor
         public override bool ContainsPoint(Vector2 localPoint)
         {
             Vector2 dir = (end - start).normalized;
-            Debug.Log($"Dir: {dir} | Normal: {new Vector2(-dir.y, dir.x)} | Width: {k_arrowWidth} | Dist: {Mathf.Abs(Vector2.Dot(localPoint, new Vector2(-dir.y, dir.x)))}");
+
             return Mathf.Abs(Vector2.Dot(localPoint - (Vector2)start, new Vector2(-dir.y, dir.x))) <= k_arrowWidth;
         }
 

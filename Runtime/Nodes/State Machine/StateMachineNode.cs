@@ -166,28 +166,6 @@ namespace GZ.AnimationGraph
                     }
                 }
 
-                //if (canTransitionate)
-                //{
-                //    foreach (var stateCondition in transition.StateConditions)
-                //    {
-                //        if (!stateCondition.IsTrue(state))
-                //        {
-                //            canTransitionate = false;
-                //            break;
-                //        }
-                //    }
-
-                //    if (canTransitionate)
-                //    {
-                //        foreach (var conditionBehaviour in transition.ConditionBehaviours)
-                //        {
-                //            if (!conditionBehaviour.IsTrue(this, state, machineLayer.NextState))
-                //            {
-                //                canTransitionate = false;
-                //                break;
-                //            }
-                //        }
-
                 if (canTransitionate)
                 {
                     foreach (var triggerToReset in possibleTriggersToReset)
@@ -199,8 +177,6 @@ namespace GZ.AnimationGraph
 
                     return transition;
                 }
-                    //}
-                //}
 
                 possibleTriggersToReset.Clear();
             }
@@ -208,25 +184,42 @@ namespace GZ.AnimationGraph
             return null;
         }
 
-        private void StartTransition(Transition transition)
+        public void StartTransition(Transition transition)
         {
             InTransition = true;
             CurrentTransition = transition;
-            TransitionDestinationIndex = States.Values.IndexOf(transition.DestinationState);
+            TransitionDestinationIndex = transition.DestinationState.InputPort.Index;
             var statePlayable = Playable.GetInput(TransitionDestinationIndex);
             statePlayable.Play();
-            
-            if (InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.Speed < 0f)
-            {
-                Playable.GetInput(TransitionDestinationIndex).SetTime(InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.RawDuration);
-            }
 
-            if (!(transition.SourceState is AnyState))
+            if (transition.SourceState != null && !(transition.SourceState is AnyState))
             {
                 CurrentState = transition.SourceState;
             }
 
             NextState = transition.DestinationState;
+
+            float offset = transition.Offset;
+
+            if (transition.OffsetType == DurationType.SourcePercentage)
+            {
+                float sourceDuration = CurrentState.InputPort.Link.OutputPort.Node.RawDuration;
+                offset *= sourceDuration == float.PositiveInfinity ? 1f : sourceDuration;
+            }
+            else if (transition.OffsetType == DurationType.DestinationPercentage)
+            {
+                float destinationDuration = NextState.InputPort.Link.OutputPort.Node.RawDuration;
+                offset *= destinationDuration == float.PositiveInfinity ? 1f : destinationDuration;
+            }
+
+            if (InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.Speed < 0f)
+            {
+                Playable.GetInput(TransitionDestinationIndex).SetTime(InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.RawDuration - offset);
+            }
+            else
+            {
+                Playable.GetInput(TransitionDestinationIndex).SetTime(offset);
+            }
 
             if (transition.InterruptionSource != TransitionInterruptionSource.None && transition.InterruptionSource != TransitionInterruptionSource.CurrentState)
             {
@@ -240,6 +233,17 @@ namespace GZ.AnimationGraph
         {
             int inputsCount = States.Count;
             float transitionDuration = CurrentTransition.Duration;
+            
+            if (CurrentTransition.DurationType == DurationType.SourcePercentage)
+            {
+                float sourceDuration = CurrentState.InputPort.Link.OutputPort.Node.Duration;
+                transitionDuration *= sourceDuration == float.PositiveInfinity ? 1f : sourceDuration;
+            }
+            else if (CurrentTransition.DurationType == DurationType.DestinationPercentage)
+            {
+                float destinationDuration = NextState.InputPort.Link.OutputPort.Node.Duration;
+                transitionDuration *= destinationDuration == float.PositiveInfinity ? 1f : destinationDuration;
+            }
 
             float progressDelta = transitionDuration != 0f ? deltaTime / transitionDuration : 1f;
             float transitionProgress = TransitionProgress;
@@ -568,4 +572,15 @@ namespace GZ.AnimationGraph
 
     [Serializable]
     public class States : IndexedDictionary<string, State> { }
+
+    public struct TransitionInfo
+    {
+        public State DestinationState;
+        public float Duration;
+        public float Offset;
+        public TransitionInterruptionSource InterruptionSource;
+        public bool OrderedInterruption;
+        public bool InterruptableByAnyState;
+        public bool PlayAfterTransition;
+    }
 }

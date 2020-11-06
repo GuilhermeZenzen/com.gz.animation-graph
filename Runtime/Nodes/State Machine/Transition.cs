@@ -15,7 +15,9 @@ namespace GZ.AnimationGraph
         [SerializeReference] public State SourceState;
         [SerializeReference] public State DestinationState;
 
+        public DurationType DurationType;
         public float Duration;
+        public DurationType OffsetType;
         public float Offset;
         public TransitionInterruptionSource InterruptionSource;
         public bool OrderedInterruption;
@@ -48,6 +50,13 @@ namespace GZ.AnimationGraph
 
             return copy;
         }
+    }
+
+    public enum DurationType
+    {
+        Fixed,
+        SourcePercentage,
+        DestinationPercentage
     }
 
     public enum TransitionInterruptionSource

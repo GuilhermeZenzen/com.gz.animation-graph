@@ -69,7 +69,7 @@ namespace GZ.AnimationGraph.Editor
 
             RegisterCallback<MouseEnterEvent>(e =>
             {
-                if (StateMachineEditor.Editor.TransitionConnection != null && ((StateMachineEditor.Editor.TransitionConnectionSource is TransitionNodeUI transitionNode && (transitionNode.EntryConnections.Count == 0 || transitionNode.EntryConnections[0].Source != this) && (transitionNode.ExitConnections.Count == 0 || transitionNode.ExitConnections[0].Destination != this)) || StateMachineEditor.Editor.TransitionConnectionSource is EntryNodeUI))
+                if (StateMachineEditor.Editor.TransitionConnection != null && (StateMachineEditor.Editor.TransitionConnectionSource is StateNodeUI || StateMachineEditor.Editor.TransitionConnectionSource is AnyStateNodeUI || (StateMachineEditor.Editor.TransitionConnectionSource is TransitionNodeUI transitionNode && (transitionNode.EntryConnections.Count == 0 || transitionNode.EntryConnections[0].Source != this) && (transitionNode.ExitConnections.Count == 0 || transitionNode.ExitConnections[0].Destination != this)) || StateMachineEditor.Editor.TransitionConnectionSource is EntryNodeUI))
                 {
                     StateMachineEditor.Editor.TransitionConnectionTarget = this;
                 }

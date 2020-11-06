@@ -166,23 +166,44 @@ namespace GZ.AnimationGraph.Editor
 
             _panSchedule.Pause();
 
+            void Connect(TransitionConnectionUI connection, ITransitionConnectable source, ITransitionConnectable destination)
+            {
+                connection.EnableContextualMenu();
+
+                connection.Source = source;
+                connection.Destination = destination;
+                source.ExitConnections.Add(connection);
+                destination.EntryConnections.Add(connection);
+
+                source.OnExitConnect(connection);
+                destination.OnEntryConnect(connection);
+
+                connection.Refresh();
+            }
+
             if (TransitionConnectionTarget == null || !canConnect)
             {
                 GraphView.RemoveElement(TransitionConnection);
             }
+            else if ((TransitionConnectionSource is StateNodeUI || TransitionConnectionSource is AnyStateNodeUI) && TransitionConnectionTarget is StateNodeUI)
+            {
+                Node sourceNode = (Node)TransitionConnectionSource;
+                Node targetNode = (Node)TransitionConnectionTarget;
+                TransitionNodeUI newTransition = new TransitionNodeUI();
+                GraphView.AddNode(newTransition);
+                newTransition.SetPosition(new Rect((sourceNode.GetPosition().position + targetNode.GetPosition().position) / 2f, Vector2.zero));
+
+                Connect(TransitionConnection, TransitionConnectionSource, newTransition);
+
+                TransitionConnectionUI transitionToDestinationConnection = new TransitionConnectionUI(true);
+                GraphView.AddElement(transitionToDestinationConnection);
+                transitionToDestinationConnection.SendToBack();
+
+                Connect(transitionToDestinationConnection, newTransition, TransitionConnectionTarget);
+            }
             else
             {
-                TransitionConnection.EnableContextualMenu();
-
-                TransitionConnection.Source = TransitionConnectionSource;
-                TransitionConnection.Destination = TransitionConnectionTarget;
-                TransitionConnectionSource.ExitConnections.Add(TransitionConnection);
-                TransitionConnectionTarget.EntryConnections.Add(TransitionConnection);
-
-                TransitionConnectionSource.OnExitConnect(TransitionConnection);
-                TransitionConnectionTarget.OnEntryConnect(TransitionConnection);
-
-                TransitionConnection.Refresh();
+                Connect(TransitionConnection, TransitionConnectionSource, TransitionConnectionTarget);
             }
 
             TransitionConnection = null;
@@ -266,40 +287,16 @@ namespace GZ.AnimationGraph.Editor
 
             GraphView.Transitions.ForEach(t =>
             {
-                var transition = new Transition() { Duration = t.DurationField.value, Offset = t.OffsetField.value, InterruptionSource = (TransitionInterruptionSource)t.InterruptionSourceField.value, OrderedInterruption = t.OrderedInterruptionToggle.value, InterruptableByAnyState = t.InterruptableByAnyStateToggle.value, PlayAfterTransition = t.PlayAfterTransitionToggle.value };
-
-                //t.ConditionPorts.ForEach(c =>
-                //{
-                //    TransitionCondition condition = new TransitionCondition();
-
-                //    var edges = c.connections.ToList();
-
-                //    if (edges.Count > 0)
-                //    {
-                //        condition.SetValueProvider(valueProviderMap[(ValueProviderOutputNodePort)edges[0].output]);
-
-                //        switch (condition.ValueProvider)
-                //        {
-                //            case BoolProvider boolProvider:
-                //                ((BoolConditionEvaluator)condition.Evaluator).ComparisonValue = (Bool)c.BoolComparisonValueField.value;
-                //                break;
-                //            case IntProvider intProvider:
-                //                var intEvaluator = (IntConditionEvaluator)condition.Evaluator;
-                //                intEvaluator.Comparison = (IntComparison)c.IntComparisonField.value;
-                //                intEvaluator.ComparisonValue = c.IntComparisonValueField.value;
-                //                break;
-                //            case FloatProvider floatProvider:
-                //                var floatEvaluator = (FloatConditionEvaluator)condition.Evaluator;
-                //                floatEvaluator.Comparison = (FloatComparison)c.FloatComparisonField.value;
-                //                floatEvaluator.ComparisonValue = c.FloatComparisonValueField.value;
-                //                break;
-                //            default:
-                //                break;
-                //        }
-                //    }
-
-                //    transition.Conditions.Add(condition);
-                //});
+                var transition = new Transition() 
+                { 
+                    DurationType = (DurationType)t.DurationTypeField.value,
+                    Duration = t.DurationField.value, 
+                    OffsetType = (DurationType)t.OffsetTypeField.value,
+                    Offset = t.OffsetField.value, 
+                    InterruptionSource = (TransitionInterruptionSource)t.InterruptionSourceField.value, 
+                    OrderedInterruption = t.OrderedInterruptionToggle.value, 
+                    InterruptableByAnyState = t.InterruptableByAnyStateToggle.value, 
+                    PlayAfterTransition = t.PlayAfterTransitionToggle.value };
 
                 stateMachine.Transitions.Add(transition);
                 NodeUI.StateMachineNodeAsset.TransitionMap.Add(transition.Id, new NodeVisualInfo(t.GetPosition().position, t.expanded));
