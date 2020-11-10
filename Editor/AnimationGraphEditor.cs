@@ -14,6 +14,8 @@ namespace GZ.AnimationGraph.Editor
     {
         public static AnimationGraphEditor Editor;
 
+        private static bool _isOpening;
+
         private Toolbar _toolbar;
         private ToolbarButton _closeButton;
         private Label _assetName;
@@ -50,6 +52,7 @@ namespace GZ.AnimationGraph.Editor
                 }
                 else
                 {
+                    _isOpening = true;
                     ShowEditor();
                     Editor.OpenAnimationGraphAsset(animationGraphAsset);
                 }
@@ -62,6 +65,15 @@ namespace GZ.AnimationGraph.Editor
 
         private void OnEnable()
         {
+            if (!_isOpening)
+            {
+                AnimationGraphAsset = null;
+            }
+            else
+            {
+                _isOpening = false;
+            }
+
             string resourcesPath = $"{AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this)).Replace($"/{nameof(AnimationGraphEditor)}.cs", "")}/Resources";
             _styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{resourcesPath}/{_ussPath}");
 
@@ -217,6 +229,8 @@ namespace GZ.AnimationGraph.Editor
 
         private void SaveAnimationGraph()
         {
+            if (AnimationGraphAsset == null) { return; }
+
             AnimationGraphAsset.Nodes.Clear();
 
             Dictionary<Node, NodeAsset> nodeUIMap = new Dictionary<Node, NodeAsset>();

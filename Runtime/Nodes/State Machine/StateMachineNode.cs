@@ -24,10 +24,12 @@ namespace GZ.AnimationGraph
 
         public float TransitionProgress => InTransition ? InputPorts[TransitionDestinationIndex].Weight : 0f;
 
-        [SerializeReference] public State CurrentState;
-        [SerializeReference] public State NextState;
+        [field: SerializeReference] public State CurrentState { get; private set; }
+        [field: SerializeReference] public State NextState { get; private set; }
 
         private List<TriggerProvider> _triggersToReset = new List<TriggerProvider>();
+
+        public event Action<Transition> OnTransitionFinished;
 
         public void Update(float deltaTime)
         {
@@ -70,13 +72,24 @@ namespace GZ.AnimationGraph
 
             for (int i = 0; i < States.Count; i++)
             {
-                if (Playable.GetInputWeight(i) > 0f && InputPorts[i].Link != null)
+                if (Playable.GetInputWeight(i) > 0f)
                 {
                     State state = States.At(i);
                     state.PreviousTime.Value = state.Time.Value;
                     state.PreviousNormalizedTime.Value = state.NormalizedTime.Value;
-                    state.Time.Value += deltaTime;
-                    state.NormalizedTime.Value += deltaTime / InputPorts[i].Link.OutputPort.Node.Duration;
+                    BaseNode node = InputPorts[i].Link != null ? InputPorts[i].Link.OutputPort.Node : null;
+
+                    if (node != null)
+                    {
+                        float trueDeltaTime = deltaTime * (node.RawDuration / node.Duration);
+                        state.Time.Value += trueDeltaTime;
+                        state.NormalizedTime.Value += trueDeltaTime / node.RawDuration;
+                    }
+                    else
+                    {
+                        state.Time.Value += deltaTime;
+                        state.NormalizedTime.Value += deltaTime;
+                    }
                 }
             }
 
@@ -134,6 +147,8 @@ namespace GZ.AnimationGraph
             if (transition != null) { StartTransition(transition); }
         }
 
+        #region Transition
+
         private Transition EvaluateTransitions(State state, int end = -1)
         {
             if (end < 0)
@@ -190,7 +205,11 @@ namespace GZ.AnimationGraph
             CurrentTransition = transition;
             TransitionDestinationIndex = transition.DestinationState.InputPort.Index;
             var statePlayable = Playable.GetInput(TransitionDestinationIndex);
-            statePlayable.Play();
+
+            if (!statePlayable.IsNull())
+            {
+                statePlayable.Play();
+            }
 
             if (transition.SourceState != null && !(transition.SourceState is AnyState))
             {
@@ -212,13 +231,16 @@ namespace GZ.AnimationGraph
                 offset *= destinationDuration == float.PositiveInfinity ? 1f : destinationDuration;
             }
 
-            if (InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.Speed < 0f)
+            if (InputPorts[TransitionDestinationIndex].Link != null)
             {
-                Playable.GetInput(TransitionDestinationIndex).SetTime(InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.RawDuration - offset);
-            }
-            else
-            {
-                Playable.GetInput(TransitionDestinationIndex).SetTime(offset);
+                if (InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.Speed < 0f)
+                {
+                    Playable.GetInput(TransitionDestinationIndex).SetTime(InputPorts[TransitionDestinationIndex].Link.OutputPort.Node.RawDuration - offset);
+                }
+                else
+                {
+                    //Playable.GetInput(TransitionDestinationIndex).SetTime(offset);
+                }
             }
 
             if (transition.InterruptionSource != TransitionInterruptionSource.None && transition.InterruptionSource != TransitionInterruptionSource.CurrentState)
@@ -272,8 +294,13 @@ namespace GZ.AnimationGraph
                 if (newInputWeight <= 0f)
                 {
                     InputPorts[i].Weight = 0f;
-                    Playable.GetInput(i).Pause();
-                    Playable.GetInput(i).SetTime(0f);
+
+                    Playable inputPlayable = Playable.GetInput(i);
+                    if (!inputPlayable.IsNull() && inputPlayable.GetOutputCount() < 2)
+                    {
+                        inputPlayable.Pause();
+                        inputPlayable.SetTime(0f);
+                    }
                     ResetState(States.At(i));
 
                     continue;
@@ -291,10 +318,10 @@ namespace GZ.AnimationGraph
                     InputPorts[i].Weight = 0f;
 
                     Playable inputPlayable = Playable.GetInput(i);
-                    if (!inputPlayable.Equals(Playable.Null))
+                    if (!inputPlayable.IsNull() && inputPlayable.GetOutputCount() < 2)
                     {
                         inputPlayable.Pause();
-                        inputPlayable.GetInput(i).SetTime(0f);
+                        inputPlayable.SetTime(0f);
                     }
                     ResetState(States.At(i));
                 }
@@ -303,6 +330,8 @@ namespace GZ.AnimationGraph
 
                 if (CurrentTransition.PlayAfterTransition)
                     Playable.GetInput(TransitionDestinationIndex).Play();
+
+                OnTransitionFinished?.Invoke(CurrentTransition);
 
                 CurrentState = CurrentTransition.DestinationState;
                 NextState = null;
@@ -315,6 +344,8 @@ namespace GZ.AnimationGraph
                 InputPorts[TransitionDestinationIndex].Weight = newTransitionProgress;
             }
         }
+
+        #endregion Transition
 
         #region Parameter
         public Parameter AddParameter(string name)
@@ -383,6 +414,8 @@ namespace GZ.AnimationGraph
 
         #endregion Parameter
 
+        #region State
+
         public State AddState(string name)
         {
             var state = new State() { Name = NameValidation.ValidateName(name, validationName => !States.ContainsKey(validationName) && !validationName.Equals(AnyState.AnyStateName)) };
@@ -427,40 +460,34 @@ namespace GZ.AnimationGraph
             if (!States.ContainsKey(stateName)) { return null; }
 
             State state = States[stateName];
-            RemovePlayableInput(Playable, States.Values.IndexOf(state));
+            DestroyInputPort(state.InputPort.Index);
             States.Remove(stateName);
 
             return state;
         }
 
-        private void RemovePlayableInput(Playable playable, int index)
+        public void SetCurrentState(string stateName) => SetCurrentState(States[stateName]);
+        public void SetCurrentState(State state)
         {
-            int FindPlayableOutput(Playable outputPlayable, Playable inputPlayable)
-            {
-                int outputCount = outputPlayable.GetOutputCount();
+            if (InTransition || state == null) { return; }
 
-                for (int i = 0; i < outputCount; i++)
+            if (CurrentState != null)
+            {
+                if (CurrentState.InputPort.Link != null && CurrentState.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
                 {
-                    if (outputPlayable.GetOutput(i).Equals(inputPlayable))
-                    {
-                        return i;
-                    }    
+                    Playable.SetInputWeight(CurrentState.InputPort.Index, 0f);
+                    CurrentState.InputPort.Link.OutputPort.Node.Playable.SetTime(0f);
+                    CurrentState.InputPort.Link.OutputPort.Node.Playable.Pause();
                 }
-
-                return -1;
             }
 
-            playable.DisconnectInput(index);
-            int newInputCount = playable.GetInputCount() - 1;
+            CurrentState = state;
 
-            for (int i = index; i < newInputCount; i++)
+            if (CurrentState.InputPort.Link != null && CurrentState.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
             {
-                Playable outputPlayable = playable.GetInput(i + 1);
-                playable.ConnectInput(i, outputPlayable, FindPlayableOutput(outputPlayable, playable), playable.GetInputWeight(i + 1));
-                playable.DisconnectInput(i + 1);
+                Playable.SetInputWeight(CurrentState.InputPort.Index, 1f);
+                CurrentState.InputPort.Link.OutputPort.Node.Playable.Play();
             }
-
-            playable.SetInputCount(newInputCount);
         }
 
         public void SetDefaultState(string stateName)
@@ -472,6 +499,50 @@ namespace GZ.AnimationGraph
             InputPorts[index].Weight = 1f;
             Playable.GetInput(index).Play();
         }
+
+        public void SetStateTime(State state, float time)
+        {
+            state.PreviousTime.Value = state.Time.Value;
+            state.PreviousNormalizedTime.Value = state.NormalizedTime.Value;
+            state.Time.Value = time;
+
+            if (state.InputPort.Link != null)
+            {
+                state.NormalizedTime.Value =  time / state.InputPort.Link.OutputPort.Node.RawDuration;
+
+                if (state.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
+                {
+                    state.InputPort.Link.OutputPort.Node.Playable.SetTime(time);
+                }
+            }
+            else
+            {
+                state.NormalizedTime.Value = time;
+            }
+        }
+
+        public void SetStateNormalizedTime(State state, float normalizedTime)
+        {
+            state.PreviousTime.Value = state.Time.Value;
+            state.PreviousNormalizedTime.Value = state.NormalizedTime.Value;
+            state.NormalizedTime.Value = normalizedTime;
+
+            if (state.InputPort.Link != null)
+            {
+                state.Time.Value = normalizedTime * state.InputPort.Link.OutputPort.Node.RawDuration;
+
+                if (state.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
+                {
+                    state.InputPort.Link.OutputPort.Node.Playable.SetTime(state.Time.Value);
+                }
+            }
+            else
+            {
+                state.Time.Value = normalizedTime;
+            }
+        }
+
+        #endregion
 
         public override NodeLink Connect(NodeInputPort inputPort, NodeOutputPort outputPort)
         {
@@ -485,7 +556,7 @@ namespace GZ.AnimationGraph
             {
                 outputPort.Node.Playable.Play();
             }
-            else
+            else if (outputPort.Node.Playable.GetOutputCount() < 2)
             {
                 outputPort.Node.Playable.Pause();
             }

@@ -85,7 +85,11 @@ public class AnimationGraphOverriderInspector : Editor
                     clipNode.Clip = overrider.Overrides[node.ID];
                 }
             });
+
+            EditorUtility.SetDirty(overrider.TargetGraph);
         }
+
+        EditorUtility.SetDirty(target);
     }
 
     private void UpdateOverrides(AnimationGraphOverrider overrider)

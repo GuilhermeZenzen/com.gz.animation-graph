@@ -18,7 +18,7 @@ namespace GZ.AnimationGraph
             {
                 _clip = value;
 
-                if (!Playable.Equals(Playable.Null))
+                if (!Playable.IsNull())
                 {
                     CreatePlayable(Playable.GetGraph());
 

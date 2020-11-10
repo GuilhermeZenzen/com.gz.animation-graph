@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 namespace GZ.AnimationGraph
@@ -33,7 +34,7 @@ namespace GZ.AnimationGraph
             return new AnimationGraphNode(Behaviour);
         }
 
-        protected override Playable OnCreatePlayable(PlayableGraph playableGraph) => Playable.Create(Behaviour.PlayableGraph, 1);
+        protected override Playable OnCreatePlayable(PlayableGraph playableGraph) => AnimationMixerPlayable.Create(Behaviour.PlayableGraph, 1);
 
         #endregion
 
@@ -107,7 +108,7 @@ namespace GZ.AnimationGraph
 
             if (Playable.GetInputCount() > 0)
             {
-                if (!Playable.GetInput(0).Equals(Playable.Null))
+                if (!Playable.GetInput(0).IsNull())
                 {
                     Playable.DisconnectInput(0);
                 }
@@ -186,6 +187,10 @@ namespace GZ.AnimationGraph
         public LayerMixerNode LayerMixer(string nodeName) => this[nodeName] as LayerMixerNode;
 
         public StateMachineNode StateMachine(string nodeName) => this[nodeName] as StateMachineNode;
+
+        public AnimationGraphNode AnimationGraph(string nodeName) => this[nodeName] as AnimationGraphNode;
+
+        public ScriptNode<T> Script<T>(string nodeName) where T: struct, IAnimationJob => this[nodeName] as ScriptNode<T>;
 
         #endregion Access
 

@@ -14,7 +14,11 @@ namespace GZ.AnimationGraph
 
         public void SetParameter(float parameter)
         {
+            if (Parameter == parameter) { return; }
+
             Parameter = parameter;
+
+            RecalculateWeights();
         }
 
         private void RecalculateWeights()

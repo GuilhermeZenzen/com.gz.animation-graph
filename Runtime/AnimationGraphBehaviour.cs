@@ -79,6 +79,10 @@ namespace GZ.AnimationGraph
 
         public StateMachineNode StateMachine(string nodeName) => Graph.StateMachine(nodeName);
 
+        public AnimationGraphNode AnimationGraph(string nodeName) => Graph.AnimationGraph(nodeName);
+
+        public ScriptNode<T> Script<T>(string nodeName) where T : struct, IAnimationJob => Graph.Script<T>(nodeName);
+
         #endregion
     }
 }
