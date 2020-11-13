@@ -81,7 +81,7 @@ namespace GZ.AnimationGraph
 
         public AnimationGraphNode AnimationGraph(string nodeName) => Graph.AnimationGraph(nodeName);
 
-        public ScriptNode<T> Script<T>(string nodeName) where T : struct, IAnimationJob => Graph.Script<T>(nodeName);
+        public ScriptNode<T> Script<T>(string nodeName) where T : struct, IScriptNodeJob => Graph.Script<T>(nodeName);
 
         #endregion
     }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEditor.UIElements;
@@ -26,6 +27,8 @@ namespace GZ.AnimationGraph.Editor
         public AnimationGraphView GraphView { get; private set; }
 
         public AnimationGraphAsset AnimationGraphAsset;
+
+        public List<Type> ScriptNodeJobs;
 
         private const string _ussPath = "AnimationGraph.uss";
         private static StyleSheet _styleSheet;
@@ -99,7 +102,9 @@ namespace GZ.AnimationGraph.Editor
             _toolbar.Add(_assetName);
             _toolbar.Add(_assetNameToSaveSpacer);
             _toolbar.Add(_saveButton);
-            
+
+            LoadScriptNodeJobs();
+
             CreateGraphView();
 
             StateMachineEditor.Editor?.Close();
@@ -173,6 +178,9 @@ namespace GZ.AnimationGraph.Editor
                         break;
                     case StateMachineNode stateMachineNode:
                         nodeUI = new StateMachineNodeUI();
+                        break;
+                    case ScriptNode scriptNode:
+                        nodeUI = new ScriptNodeUI();
                         break;
                     default:
                         break;
@@ -285,6 +293,7 @@ namespace GZ.AnimationGraph.Editor
                 new SearchTreeEntry(new GUIContent("1D Blendspace")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("2D Blendspace")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("State Machine")) { level = 1 },
+                new SearchTreeEntry(new GUIContent("Script")) { level = 1 }
             };
 
             if (GraphView.OutputIndicatorNode == null)
@@ -325,6 +334,10 @@ namespace GZ.AnimationGraph.Editor
                     node = new StateMachineNodeUI();
 
                     break;
+                case "Script":
+                    node = new ScriptNodeUI();
+
+                    break;
                 case "Output":
                     node = new OutputNodeUI();
                     GraphView.OutputIndicatorNode = (OutputNodeUI)node;
@@ -341,6 +354,24 @@ namespace GZ.AnimationGraph.Editor
             GraphView.AddNode(node, context.screenMousePosition);
 
             return true;
+        }
+
+        private void LoadScriptNodeJobs()
+        {
+            //ScriptNodeJobs = new Dictionary<string, Type>();
+            ScriptNodeJobs = new List<Type>();
+            Type interfaceType = typeof(IScriptNodeJob);
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (!type.IsInterface && interfaceType.IsAssignableFrom(type))
+                    {
+                        ScriptNodeJobs.Add(type);
+                    }
+                }
+            }
         }
     }
 }

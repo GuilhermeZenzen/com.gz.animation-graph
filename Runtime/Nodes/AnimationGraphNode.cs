@@ -190,7 +190,7 @@ namespace GZ.AnimationGraph
 
         public AnimationGraphNode AnimationGraph(string nodeName) => this[nodeName] as AnimationGraphNode;
 
-        public ScriptNode<T> Script<T>(string nodeName) where T: struct, IAnimationJob => this[nodeName] as ScriptNode<T>;
+        public ScriptNode<T> Script<T>(string nodeName) where T: struct, IScriptNodeJob => this[nodeName] as ScriptNode<T>;
 
         #endregion Access
 

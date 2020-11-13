@@ -6,7 +6,14 @@ using UnityEngine.Playables;
 
 namespace GZ.AnimationGraph
 {
-    public class ScriptNode<T> : BaseNode where T: struct, IAnimationJob
+    public class ScriptNode : BaseNode
+    {
+        public override BaseNode Copy() => new ScriptNode();
+
+        protected override Playable OnCreatePlayable(PlayableGraph playableGraph) => Playable.Null;
+    }
+
+    public class ScriptNode<T> : ScriptNode where T: struct, IScriptNodeJob
     {
         private T _job;
         public T Job
