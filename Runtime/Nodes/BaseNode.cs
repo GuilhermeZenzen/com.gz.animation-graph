@@ -35,15 +35,20 @@ namespace GZ.AnimationGraph
 
         public float Duration { get; private set; }
         public float RawDuration { get; private set; }
+
+        public AnimationGraphNode Graph { get; set; }
         
         public abstract BaseNode Copy();
 
         public Playable CreatePlayable(PlayableGraph playableGraph)
         {
-            Playable = OnCreatePlayable(playableGraph);
-            Playable.SetOutputCount(0);
-            Playable.SetSpeed(Speed);
-            UpdateDuration();
+            if (Playable.IsNull())
+            {
+                Playable = OnCreatePlayable(playableGraph);
+                Playable.SetOutputCount(0);
+                Playable.SetSpeed(Speed);
+                UpdateDuration();
+            }
 
             return Playable;
         }
@@ -181,6 +186,8 @@ namespace GZ.AnimationGraph
 
             Playable.ConnectInput(inputPort.Index, outputPort.Node.Playable, outputPort.Index, inputPort.Weight);
 
+            Graph?.ConnectedNode(nodeLink);
+
             return nodeLink;
         }
 
@@ -193,8 +200,11 @@ namespace GZ.AnimationGraph
         public virtual void Disconnect(NodeLink nodeLink)
         {
             Playable.DisconnectInput(nodeLink.InputPort.Index);
-            nodeLink.InputPort.Link = null;
+
             nodeLink.OutputPort.Link = null;
+            nodeLink.InputPort.Link = null;
+
+            Graph?.DisconnectedNode(nodeLink);
         }
     }
 }

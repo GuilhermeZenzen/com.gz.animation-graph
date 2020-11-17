@@ -6,16 +6,53 @@ using UnityEngine.Playables;
 
 namespace GZ.AnimationGraph
 {
+    [System.Serializable]
     public class ScriptNode : BaseNode
     {
-        public override BaseNode Copy() => new ScriptNode();
+        [field: SerializeReference] public IScriptNodeJob Job { get; private set; }
+
+        public ScriptNode() { }
+        public ScriptNode(IScriptNodeJob job) => Job = job;
+
+        public void SetJob<T>(T job) where T: struct, IScriptNodeJob
+        {
+            Job = job;
+
+            if (!Playable.IsNull())
+            {
+                ((AnimationScriptPlayable)Playable).SetJobData(job);
+            }
+        }
+        public void SetJob<T>() where T: struct, IScriptNodeJob
+        {
+            if (!Playable.IsNull())
+            {
+                ((AnimationScriptPlayable)Playable).SetJobData((T)Job);
+            }
+        }
+
+        public override BaseNode Copy() => new ScriptNode { Job = Job };
 
         protected override Playable OnCreatePlayable(PlayableGraph playableGraph) => Playable.Null;
+
+        public Playable CreateScriptPlayable<T>(PlayableGraph playableGraph) where T: struct, IScriptNodeJob
+        {
+            if (Playable.IsNull())
+            {
+                Playable = AnimationScriptPlayable.Create(playableGraph, Job != null ? (T)Job : default);
+                Playable.SetOutputCount(0);
+                Playable.SetSpeed(Speed);
+                UpdateDuration();
+            }
+
+            return Playable;
+        }
     }
 
-    public class ScriptNode<T> : ScriptNode where T: struct, IScriptNodeJob
+    [System.Serializable]
+    public class ScriptNode<T> : BaseNode where T: struct, IScriptNodeJob
     {
-        private T _job;
+        [SerializeReference] private T _job;
         public T Job
         {
             get => _job;
@@ -30,6 +67,7 @@ namespace GZ.AnimationGraph
             }
         }
 
+        public ScriptNode() { }
         public ScriptNode(T job) => _job = job;
 
         public override BaseNode Copy() => new ScriptNode<T>(_job);

@@ -72,7 +72,7 @@ namespace GZ.AnimationGraph.Editor
             port.Add(removePortButton);
         }
 
-        protected virtual void GenerateOutputPort(Color portColor = default)
+        protected virtual void GenerateOutputPort(Color portColor)
         {
             OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(BaseNode));
             OutputPort.portName = "";

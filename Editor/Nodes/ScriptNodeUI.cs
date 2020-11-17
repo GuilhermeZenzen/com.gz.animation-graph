@@ -8,25 +8,19 @@ using System.Linq;
 
 namespace GZ.AnimationGraph.Editor
 {
-    public class ScriptNodeUI : BaseNodeUI
+    public class WildcardNodeUI : BaseNodeUI
     {
-        private PopupField<Type> JobTypeField;
-
         public Port InputPort { get; private set; }
 
-        protected override string DefaultName => "Script";
+        protected override string DefaultName => "Wildcard";
 
-        public ScriptNodeUI() : base()
+        public WildcardNodeUI() : base()
         {
-            JobTypeField = AnimationGraphEditor.Editor.ScriptNodeJobs.Count > 0 ? new PopupField<Type>(AnimationGraphEditor.Editor.ScriptNodeJobs, 0,
-                type => type.Name, type => type.Name)
-                : new PopupField<Type>();
-
-            extensionContainer.Add(JobTypeField);
-
             InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
             InputPort.portName = "";
             inputContainer.Add(InputPort);
+
+            GenerateOutputPort(Color.white);
 
             RefreshExpandedState();
             RefreshPorts();
@@ -34,11 +28,6 @@ namespace GZ.AnimationGraph.Editor
 
         public override void LoadData(AnimationGraphView graphView, NodeAsset nodeAsset, Dictionary<NodeAsset, BaseNodeUI> nodeMap)
         {
-            if (!(nodeAsset.Data is ScriptNode))
-            {
-                JobTypeField.SetValueWithoutNotify(nodeAsset.Data.GetType().GetGenericArguments()[0]);
-            }
-
             base.LoadData(graphView, nodeAsset, nodeMap);
 
             LoadDataWithCallback(graphView, nodeAsset, nodeMap, portAsset => InputPort);
@@ -46,7 +35,7 @@ namespace GZ.AnimationGraph.Editor
 
         public override NodeAsset GenerateData()
         {
-            BaseNode data = AnimationGraphEditor.Editor.ScriptNodeJobs.Count > 0 ? (BaseNode)Activator.CreateInstance(typeof(ScriptNode<>).MakeGenericType(JobTypeField.value)) : new ScriptNode();
+            WildcardNode data = new WildcardNode();
 
             if (data != null)
             {

@@ -28,8 +28,6 @@ namespace GZ.AnimationGraph.Editor
 
         public AnimationGraphAsset AnimationGraphAsset;
 
-        public List<Type> ScriptNodeJobs;
-
         private const string _ussPath = "AnimationGraph.uss";
         private static StyleSheet _styleSheet;
 
@@ -102,8 +100,6 @@ namespace GZ.AnimationGraph.Editor
             _toolbar.Add(_assetName);
             _toolbar.Add(_assetNameToSaveSpacer);
             _toolbar.Add(_saveButton);
-
-            LoadScriptNodeJobs();
 
             CreateGraphView();
 
@@ -179,8 +175,8 @@ namespace GZ.AnimationGraph.Editor
                     case StateMachineNode stateMachineNode:
                         nodeUI = new StateMachineNodeUI();
                         break;
-                    case ScriptNode scriptNode:
-                        nodeUI = new ScriptNodeUI();
+                    case WildcardNode wildcardNode:
+                        nodeUI = new WildcardNodeUI();
                         break;
                     default:
                         break;
@@ -293,7 +289,7 @@ namespace GZ.AnimationGraph.Editor
                 new SearchTreeEntry(new GUIContent("1D Blendspace")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("2D Blendspace")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("State Machine")) { level = 1 },
-                new SearchTreeEntry(new GUIContent("Script")) { level = 1 }
+                new SearchTreeEntry(new GUIContent("Wildcard")) { level = 1 }
             };
 
             if (GraphView.OutputIndicatorNode == null)
@@ -334,8 +330,8 @@ namespace GZ.AnimationGraph.Editor
                     node = new StateMachineNodeUI();
 
                     break;
-                case "Script":
-                    node = new ScriptNodeUI();
+                case "Wildcard":
+                    node = new WildcardNodeUI();
 
                     break;
                 case "Output":
@@ -354,24 +350,6 @@ namespace GZ.AnimationGraph.Editor
             GraphView.AddNode(node, context.screenMousePosition);
 
             return true;
-        }
-
-        private void LoadScriptNodeJobs()
-        {
-            //ScriptNodeJobs = new Dictionary<string, Type>();
-            ScriptNodeJobs = new List<Type>();
-            Type interfaceType = typeof(IScriptNodeJob);
-
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (!type.IsInterface && interfaceType.IsAssignableFrom(type))
-                    {
-                        ScriptNodeJobs.Add(type);
-                    }
-                }
-            }
         }
     }
 }

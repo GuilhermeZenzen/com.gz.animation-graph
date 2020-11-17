@@ -49,6 +49,9 @@ namespace GZ.AnimationGraph
 
         public T AddNode<T>(T node, string name = null) where T : BaseNode => Graph.AddNode(node, name);
 
+        public ScriptNode AddScriptNode<T>(T job, string name) where T : struct, IScriptNodeJob => Graph.AddScriptNode<T>(job, name);
+        public ScriptNode AddScriptNode<T>(ScriptNode node, string name) where T : struct, IScriptNodeJob => Graph.AddScriptNode<T>(node, name);
+
         public bool RemoveNode(string nodeName) => Graph.RemoveNode(nodeName);
 
         public void Clear() => Graph.Clear();
@@ -81,7 +84,7 @@ namespace GZ.AnimationGraph
 
         public AnimationGraphNode AnimationGraph(string nodeName) => Graph.AnimationGraph(nodeName);
 
-        public ScriptNode<T> Script<T>(string nodeName) where T : struct, IScriptNodeJob => Graph.Script<T>(nodeName);
+        public ScriptNode Script(string nodeName) => Graph.Script(nodeName);
 
         #endregion
     }
