@@ -239,7 +239,7 @@ namespace GZ.AnimationGraph
                 }
                 else
                 {
-                    //Playable.GetInput(TransitionDestinationIndex).SetTime(offset);
+                    Playable.GetInput(TransitionDestinationIndex).SetTime(offset);
                 }
             }
 
@@ -298,8 +298,11 @@ namespace GZ.AnimationGraph
                     Playable inputPlayable = Playable.GetInput(i);
                     if (!inputPlayable.IsNull() && inputPlayable.GetOutputCount() < 2)
                     {
-                        inputPlayable.Pause();
-                        inputPlayable.SetTime(0f);
+                        //inputPlayable.Pause();
+                        if (InputPorts[i].Link.OutputPort.Node.CanSetTime)
+                        {
+                            inputPlayable.SetTime(0f);
+                        }
                     }
                     ResetState(States.At(i));
 
@@ -320,8 +323,11 @@ namespace GZ.AnimationGraph
                     Playable inputPlayable = Playable.GetInput(i);
                     if (!inputPlayable.IsNull() && inputPlayable.GetOutputCount() < 2)
                     {
-                        inputPlayable.Pause();
-                        inputPlayable.SetTime(0f);
+                        //inputPlayable.Pause();
+                        if (InputPorts[i].Link.OutputPort.Node.CanSetTime)
+                        {
+                            inputPlayable.SetTime(0f);
+                        }
                     }
                     ResetState(States.At(i));
                 }
@@ -476,8 +482,12 @@ namespace GZ.AnimationGraph
                 if (CurrentState.InputPort.Link != null && CurrentState.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
                 {
                     Playable.SetInputWeight(CurrentState.InputPort.Index, 0f);
-                    CurrentState.InputPort.Link.OutputPort.Node.Playable.SetTime(0f);
-                    CurrentState.InputPort.Link.OutputPort.Node.Playable.Pause();
+
+                    if (CurrentState.InputPort.Link.OutputPort.Node.CanSetTime)
+                    {
+                        CurrentState.InputPort.Link.OutputPort.Node.Playable.SetTime(0f);
+                    }
+                    //CurrentState.InputPort.Link.OutputPort.Node.Playable.Pause();
                 }
             }
 
@@ -510,7 +520,7 @@ namespace GZ.AnimationGraph
             {
                 state.NormalizedTime.Value =  time / state.InputPort.Link.OutputPort.Node.RawDuration;
 
-                if (state.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
+                if (state.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2 && state.InputPort.Link.OutputPort.Node.CanSetTime)
                 {
                     state.InputPort.Link.OutputPort.Node.Playable.SetTime(time);
                 }
@@ -531,7 +541,7 @@ namespace GZ.AnimationGraph
             {
                 state.Time.Value = normalizedTime * state.InputPort.Link.OutputPort.Node.RawDuration;
 
-                if (state.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2)
+                if (state.InputPort.Link.OutputPort.Node.Playable.GetOutputCount() < 2 && state.InputPort.Link.OutputPort.Node.CanSetTime)
                 {
                     state.InputPort.Link.OutputPort.Node.Playable.SetTime(state.Time.Value);
                 }
@@ -546,7 +556,10 @@ namespace GZ.AnimationGraph
 
         public override NodeLink Connect(NodeInputPort inputPort, NodeOutputPort outputPort)
         {
-            outputPort.Node.Playable.SetTime(0f);
+            if (outputPort.Node.CanSetTime)
+            {
+                outputPort.Node.Playable.SetTime(0f);
+            }
 
             if (States.At(inputPort.Index) == CurrentState)
             {
@@ -556,11 +569,11 @@ namespace GZ.AnimationGraph
             {
                 outputPort.Node.Playable.Play();
             }
-            else if (outputPort.Node.Playable.GetOutputCount() < 2)
-            {
-                outputPort.Node.Playable.Pause();
-            }
-
+            //else if (outputPort.Node.Playable.GetOutputCount() < 2)
+            //{
+            //    outputPort.Node.Playable.Pause();
+            //}
+            
             inputPort.Weight = inputPort.Weight;
 
             return base.Connect(inputPort, outputPort);

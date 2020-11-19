@@ -36,6 +36,9 @@ namespace GZ.AnimationGraph
         public float Duration { get; private set; }
         public float RawDuration { get; private set; }
 
+        public bool CanBePaused { get; set; } = true;
+        public bool CanSetTime { get; set; } = true;
+
         public AnimationGraphNode Graph { get; set; }
         
         public abstract BaseNode Copy();

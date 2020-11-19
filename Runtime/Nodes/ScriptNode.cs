@@ -40,6 +40,7 @@ namespace GZ.AnimationGraph
             if (Playable.IsNull())
             {
                 Playable = AnimationScriptPlayable.Create(playableGraph, Job != null ? (T)Job : default);
+                Playable.SetTraversalMode(PlayableTraversalMode.Passthrough);
                 Playable.SetOutputCount(0);
                 Playable.SetSpeed(Speed);
                 UpdateDuration();
