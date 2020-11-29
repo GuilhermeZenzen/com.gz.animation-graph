@@ -71,7 +71,7 @@ namespace GZ.AnimationGraph.Editor
             return inputPort;
         }
 
-        public override NodeAsset GenerateData() => new NodeAsset { Data = new Blendspace2DNode { Name = _nameField.value, Speed = _speedField.value, BlendingMode = (Blendspace2DBlendingMode)_blendingModeField.value } };
+        public override NodeAsset GenerateData() => new NodeAsset { Data = new Blendspace2DNode { Name = NameField.value, Speed = _speedField.value, BlendingMode = (Blendspace2DBlendingMode)_blendingModeField.value } };
 
         public override void GenerateLinkData(NodeAsset nodeAsset, Dictionary<Node, NodeAsset> nodeMap)
         {

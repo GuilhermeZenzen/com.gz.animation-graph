@@ -5,23 +5,31 @@ using UnityEngine.UIElements;
 
 namespace GZ.AnimationGraph.Editor
 {
-    public interface ITransitionConnectable
+    public interface IConnectable
     {
         IResolvedStyle resolvedStyle { get; }
 
-        List<TransitionConnectionUI> EntryConnections { get; }
-        List<TransitionConnectionUI> ExitConnections { get; }
+        List<ConnectionUI> EntryConnections { get; }
+        List<ConnectionUI> ExitConnections { get; }
 
-        void OnEntryConnect(TransitionConnectionUI connection);
-        void OnExitConnect(TransitionConnectionUI connection);
+        bool HasTwoWaysConnection { get; }
 
-        void OnEntryConnectionDeleted(TransitionConnectionUI connection);
-        void OnExitConnectionDeleted(TransitionConnectionUI connection);
+        void OnEntryConnect(ConnectionUI connection);
+        void OnExitConnect(ConnectionUI connection);
+
+        void OnEntryConnectionDeleted(ConnectionUI connection);
+        void OnExitConnectionDeleted(ConnectionUI connection);
+
+        bool CanConnect(IConnectable target);
+
+        (ConnectionUI connection, bool isNew) GetConnection(IConnectable target, bool isEnabled);
     }
 
     public static class TransitionConnectable
     {
-        public static void ClearConnections(this ITransitionConnectable connectable)
+        public static ConnectionUI CreateDefaultConnection(bool isEnabled) => new ConnectionUI(isEnabled);
+
+        public static void ClearConnections(this IConnectable connectable)
         {
             connectable.EntryConnections.ForEach(c =>
             {

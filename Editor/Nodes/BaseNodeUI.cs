@@ -14,7 +14,7 @@ namespace GZ.AnimationGraph.Editor
     {
         public string ID;
 
-        protected TextField _nameField;
+        public TextField NameField { get; private set; }
         protected FloatField _speedField;
 
         public Port OutputPort { get; private set; }
@@ -29,11 +29,11 @@ namespace GZ.AnimationGraph.Editor
             Label titleLabel = (Label)titleContainer[0];
             titleContainer.RemoveAt(0);
 
-            _nameField = new TextField();
-            _nameField.style.flexGrow = 1f;
+            NameField = new TextField();
+            NameField.style.flexGrow = 1f;
 
             container.Add(titleLabel);
-            container.Add(_nameField);
+            container.Add(NameField);
 
             titleContainer.Insert(0, container);
 
@@ -91,7 +91,7 @@ namespace GZ.AnimationGraph.Editor
         {
             ID = string.IsNullOrEmpty(nodeAsset.ID) ? Guid.NewGuid().ToString() : nodeAsset.ID;
 
-            _nameField.SetValueWithoutNotify(string.IsNullOrEmpty(nodeAsset.Data.Name) ? DefaultName : nodeAsset.Data.Name);
+            NameField.SetValueWithoutNotify(string.IsNullOrEmpty(nodeAsset.Data.Name) ? DefaultName : nodeAsset.Data.Name);
             _speedField.SetValueWithoutNotify(nodeAsset.Data.Speed);
         }
 

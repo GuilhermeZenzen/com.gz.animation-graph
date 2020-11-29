@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GZ.Tools.UnityUtility;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,22 +7,37 @@ using UnityEngine;
 namespace GZ.AnimationGraph
 {
     [Serializable]
-    public class AnyState : State
+    public class AnyState : BaseState, INamedItem<AnyState>
     {
-        public const string AnyStateName = "Any State";
+        public NamedItemsGroup<AnyState> Group { get; set; }
 
-        [SerializeReference] public List<StateFilterItem> StateFilter = new List<StateFilterItem>();
-
-        public AnyState() : base()
+        [SerializeField] protected string _name;
+        public string Name
         {
-            Name = AnyStateName;
+            get => _name;
+            set
+            {
+                if (Group == null)
+                {
+                    _name = value;
+                }
+                else
+                {
+                    Group.RenameItem(this, value);
+                }
+            }
         }
 
-        protected override State GetCopyInstance() => new AnyState();
+        [SerializeReference] public List<AnyStateFilter> StateFilters = new List<AnyStateFilter>();
+
+        public void SetNameWithoutNotify(string newName) => _name = newName;
+
+        protected override BaseState GetCopyInstance() => new AnyState();
+
     }
 
     [Serializable]
-    public class StateFilterItem
+    public class AnyStateFilter
     {
         [SerializeReference] public State State;
         public AnyStateFilterMode Mode;

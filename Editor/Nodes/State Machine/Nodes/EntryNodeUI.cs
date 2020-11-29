@@ -6,18 +6,20 @@ using UnityEngine.UIElements;
 
 namespace GZ.AnimationGraph.Editor
 {
-    public class EntryNodeUI : StateMachineBaseNodeUI, ITransitionConnectable
+    public class EntryNodeUI : StateMachineBaseNodeUI, IConnectable
     {
+        public override string Title => "Entry";
+
         private static readonly Color _portColor = new Color(252 / 255f, 231 / 255f, 3 / 255f);
 
-        public List<TransitionConnectionUI> EntryConnections { get; private set; } = new List<TransitionConnectionUI>();
+        public List<ConnectionUI> EntryConnections { get; private set; } = new List<ConnectionUI>();
 
-        public List<TransitionConnectionUI> ExitConnections { get; private set; } = new List<TransitionConnectionUI>();
+        public List<ConnectionUI> ExitConnections { get; private set; } = new List<ConnectionUI>();
 
-        public EntryNodeUI()
+        public bool HasTwoWaysConnection => false;
+
+        public EntryNodeUI() : base()
         {
-            title = "Entry";
-
             capabilities &= ~Capabilities.Deletable;
 
             RefreshExpandedState();
@@ -30,10 +32,7 @@ namespace GZ.AnimationGraph.Editor
         {
             if (entryState != null)
             {
-                var connection = StateMachineEditor.Editor.CreateTransitionConnection(this, map[entryState]);
-                ExitConnections.Add(connection);
-                map[entryState].EntryConnections.Add(connection);
-                connection.schedule.Execute(() => connection.Refresh());
+                var connection = StateMachineEditor.Editor.CreateConnection(this, map[entryState], false);
             }
         }
 
@@ -55,30 +54,36 @@ namespace GZ.AnimationGraph.Editor
 
             evt.menu.AppendAction("Set Entry State", a =>
             {
-                StateMachineEditor.Editor.AddTransitionConnection(this);
+                StateMachineEditor.Editor.AddConnection(this);
             });
         }
 
-        public void OnEntryConnect(TransitionConnectionUI connection)
+        public (ConnectionUI connection, bool isNew) GetConnection(IConnectable target, bool isEnabled)
+        {
+            return (new ConnectionUI(isEnabled), true);
+        }
+
+        public bool CanConnect(IConnectable target) => target is StateNodeUI;
+
+        public void OnEntryConnect(ConnectionUI connection)
         {
 
         }
 
-        public void OnExitConnect(TransitionConnectionUI connection)
+        public void OnExitConnect(ConnectionUI connection)
         {
             if (ExitConnections.Count > 1)
             {
                 ExitConnections[0].Delete();
-                ExitConnections.RemoveAt(0);
             }
         }
 
-        public void OnEntryConnectionDeleted(TransitionConnectionUI connection)
+        public void OnEntryConnectionDeleted(ConnectionUI connection)
         {
 
         }
 
-        public void OnExitConnectionDeleted(TransitionConnectionUI connection)
+        public void OnExitConnectionDeleted(ConnectionUI connection)
         {
 
         }

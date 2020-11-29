@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GZ.Tools.UnityUtility;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,61 +7,42 @@ using UnityEngine;
 namespace GZ.AnimationGraph
 {
     [Serializable]
-    public class State
+    public class State : BaseState, INamedItem<State, StateGroup>
     {
-        public string Id;
+        public StateGroup Group { get; set; }
 
-        public string Name;
-
-        public NodeInputPort InputPort;
+        [SerializeField] protected string _name;
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (Group == null)
+                {
+                    _name = value;
+                }
+                else
+                {
+                    Group.RenameItem(this, value);
+                }
+            }
+        }
 
         [SerializeReference]
         public List<Transition> EntryTransitions = new List<Transition>();
 
-        [SerializeReference]
-        public List<Transition> ExitTransitions = new List<Transition>();
-
-        [SerializeReference] public FloatProvider Time = new FloatProvider();
-        [SerializeReference] public FloatProvider NormalizedTime = new FloatProvider();
-        [SerializeReference] public FloatProvider PreviousTime = new FloatProvider();
-        [SerializeReference] public FloatProvider PreviousNormalizedTime = new FloatProvider();
-
-        public State() => Id = Guid.NewGuid().ToString();
-
-        public State Copy(Func<Transition, Transition> transitionCopyCallback, Dictionary<IValueProvider, IValueProvider> valueProviderCopyMap = null)
+        public override BaseState Copy(Func<Transition, Transition> transitionCopyCallback, Dictionary<IValueProvider, IValueProvider> valueProviderCopyMap = null)
         {
-            var copy = GetCopyInstance();
+            State copy = (State)base.Copy(transitionCopyCallback, valueProviderCopyMap);
 
-            FloatProvider CopyProvider(FloatProvider originalProvider)
-            {
-                if (valueProviderCopyMap != null && valueProviderCopyMap.ContainsKey(originalProvider))
-                {
-                    return (FloatProvider)valueProviderCopyMap[originalProvider];
-                }
-                else
-                {
-                    var providerCopy = (FloatProvider)originalProvider.Copy();
-
-                    if (valueProviderCopyMap != null)
-                    {
-                        valueProviderCopyMap.Add(originalProvider, providerCopy);
-                    }
-
-                    return providerCopy;
-                }
-            }
-
-            copy.Time = CopyProvider(Time);
-            copy.PreviousTime = CopyProvider(PreviousTime);
-            copy.NormalizedTime = CopyProvider(NormalizedTime);
-            copy.PreviousNormalizedTime = CopyProvider(PreviousNormalizedTime);
-
+            copy.Name = Name;
             EntryTransitions.ForEach(t => copy.EntryTransitions.Add(transitionCopyCallback(t)));
-            ExitTransitions.ForEach(t => copy.ExitTransitions.Add(transitionCopyCallback(t)));
 
             return copy;
         }
 
-        protected virtual State GetCopyInstance() => new State() { Name = Name };
+        public void SetNameWithoutNotify(string newName) => _name = newName;
+
+        protected override BaseState GetCopyInstance() => new State() { Name = Name };
     }
 }

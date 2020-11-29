@@ -1,8 +1,5 @@
-﻿using GZ.AnimationGraph;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 namespace GZ.AnimationGraph
@@ -12,7 +9,7 @@ namespace GZ.AnimationGraph
     {
         public string Id;
 
-        [SerializeReference] public State SourceState;
+        [SerializeReference] public BaseState SourceState;
         [SerializeReference] public State DestinationState;
 
         public DurationType DurationType;
@@ -28,20 +25,24 @@ namespace GZ.AnimationGraph
 
         public Transition() => Id = Guid.NewGuid().ToString();
 
-        public Transition Copy(Dictionary<State, State> copiedStates, Dictionary<IValueProvider, IValueProvider> valueProviderCopyMap)
+        public Transition Copy(Dictionary<BaseState, BaseState> copiedStates, Dictionary<IValueProvider, IValueProvider> valueProviderCopyMap)
         {
             var copy = new Transition 
             { 
-                Duration = Duration, 
+                Id = Id,
+                DurationType = DurationType,
+                Duration = Duration,
+                OffsetType = OffsetType,
                 Offset = Offset, 
-                InterruptionSource = InterruptionSource, 
+                InterruptionSource = InterruptionSource,
+                OrderedInterruption = OrderedInterruption,
                 InterruptableByAnyState = InterruptableByAnyState, 
                 PlayAfterTransition = PlayAfterTransition 
             };
 
             if (copiedStates.ContainsKey(SourceState)) { copy.SourceState = copiedStates[SourceState]; }
 
-            if (copiedStates.ContainsKey(DestinationState)) { copy.DestinationState = copiedStates[DestinationState]; }
+            if (copiedStates.ContainsKey(DestinationState)) { copy.DestinationState = (State)copiedStates[DestinationState]; }
 
             Conditions.ForEach(c =>
             {

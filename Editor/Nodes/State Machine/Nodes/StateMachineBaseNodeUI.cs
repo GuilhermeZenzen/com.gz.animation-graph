@@ -7,9 +7,16 @@ using UnityEngine.UIElements;
 
 namespace GZ.AnimationGraph.Editor
 {
-    public class StateMachineBaseNodeUI : Node
+    public abstract class StateMachineBaseNodeUI : Node
     {
         public StateMachineGraphView GraphView;
+
+        public abstract string Title { get; }
+
+        public StateMachineBaseNodeUI()
+        {
+            title = Title;
+        }
 
         protected void MakePortRemovable(Port port, Action callback = null)
         {

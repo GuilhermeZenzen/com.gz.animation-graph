@@ -9,15 +9,39 @@ namespace GZ.AnimationGraph.Editor
 {
     public class AnyStatePriorityManagerNodeUI : StateMachineBaseNodeUI
     {
+        public override string Title => "Any State Priority Manager";
+
         private static readonly Color _portColor = Color.white;
 
-        public AnyStatePriorityManagerNodeUI()
+        public List<AnyStateNodeUI> AnyStates { get; private set; } = new List<AnyStateNodeUI>();
+        private NodeItemList _anyStateList;
+
+        public AnyStatePriorityManagerNodeUI() : base()
         {
-            title = "Any State Priority Manager";
+            _anyStateList = new NodeItemList(
+                "Any States", 
+                "Any State", 
+                AnyStates, 
+                25, 
+                container => container.Add(new NamedItemFinder<AnyStateNodeUI>(StateMachineEditor.Editor.AnyStates)),
+                (container, index) =>
+                {
+                    void SelectAnyState(AnyStateNodeUI previousAnyState, AnyStateNodeUI newAnyState, int selectedIndex)
+                    {
+                        AnyStates[index] = newAnyState;
+                    }
+
+                    var anyStateFinder = container.Q<NamedItemFinder<AnyStateNodeUI>>();
+                    anyStateFinder.OnItemSelected -= SelectAnyState;
+                    anyStateFinder.OnItemSelected += SelectAnyState;
+                    anyStateFinder.SelectItemWithoutNotify(AnyStates[index], true);
+                },
+                () => null);
+            extensionContainer.Add(_anyStateList);
 
             Button createAnyStatePriorityPortButton = new Button(() => CreateAnyStatePriorityPort()) { text = "+ Any State" };
 
-            inputContainer.Add(createAnyStatePriorityPortButton);
+            //inputContainer.Add(createAnyStatePriorityPortButton);
 
             RefreshExpandedState();
             RefreshPorts();
@@ -39,24 +63,30 @@ namespace GZ.AnimationGraph.Editor
             return port;
         }
 
-        public void LoadData(GraphView graphView, List<AnyState> anyStates, Dictionary<AnyState, AnyStateNodeUI> map)
+        public void LoadData(GraphView graphView, List<AnyState> anyStates, Dictionary<AnyState, AnyStateNodeUI> anyStateMap)
         {
-            anyStates.ForEach(s =>
+            anyStates.ForEach(anyState =>
             {
-                Port port = CreateAnyStatePriorityPort();
-
-                if (s == null) { return; }
-
-                var anyStateNode = (AnyStateNodeUI)map[s];
-
-                Edge edge = new Edge { output = anyStateNode.PriorityPort, input = port };
-
-                edge.output.Connect(edge);
-                edge.input.Connect(edge);
-
-                graphView.AddElement(edge);
-
+                AnyStates.Add(anyStateMap[anyState]);
             });
+
+            _anyStateList.List.Refresh();
+
+            //anyStates.ForEach(s =>
+            //{
+            //    Port port = CreateAnyStatePriorityPort();
+
+            //    if (s == null) { return; }
+
+            //    var anyStateNode = (AnyStateNodeUI)anyStateMap[s];
+
+            //    Edge edge = new Edge { output = anyStateNode.PriorityPort, input = port };
+
+            //    edge.output.Connect(edge);
+            //    edge.input.Connect(edge);
+
+            //    graphView.AddElement(edge);
+            //});
         }
     }
 }

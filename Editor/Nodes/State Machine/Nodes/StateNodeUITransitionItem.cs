@@ -7,13 +7,15 @@ namespace GZ.AnimationGraph.Editor
 {
     public class StateNodeUITransitionItem : VisualElement
     {
-        private TransitionNodeUI _transition;
+        private TransitionConnectionUI _transition;
 
         public Label DestinationLabel { get; private set; }
 
-        public StateNodeUITransitionItem(TransitionNodeUI transition)
+        public StateNodeUITransitionItem(TransitionConnectionUI transition)
         {
-            DestinationLabel = new Label(transition.ExitConnections.Count > 0 ? ((StateNodeUI)transition.ExitConnections[0].Destination).NameField.value : "---");
+            StateNodeUI destinationState = (StateNodeUI)transition.Destination;
+
+            DestinationLabel = new Label(destinationState.Name);
             DestinationLabel.pickingMode = PickingMode.Ignore;
 
             var moveUpButton = new Button(MoveUp) { text = "▲" };
@@ -27,12 +29,8 @@ namespace GZ.AnimationGraph.Editor
             Add(moveDownButton);
 
             _transition = transition;
-            _transition.OnDestinationChanged += ChangeDestination;
 
-            if (_transition.ExitConnections.Count > 0)
-            {
-                ((StateNodeUI)_transition.ExitConnections[0].Destination).OnNameChanged += ChangeDestinationLabel;
-            }
+            destinationState.OnNameChanged += ChangeDestinationLabel;
 
             RegisterCallback<MouseDownEvent>(e =>
             {
@@ -41,42 +39,29 @@ namespace GZ.AnimationGraph.Editor
                 schedule.Execute(() =>
                 {
                     StateMachineEditor.Editor.GraphView.ClearSelection();
-                    StateMachineEditor.Editor.GraphView.AddToSelection(_transition);
+                    StateMachineEditor.Editor.GraphView.AddToSelection((StateNodeUI)_transition.Destination);
                     StateMachineEditor.Editor.GraphView.FrameSelection();
                 });
             });
-        }
-
-        private void ChangeDestination(StateNodeUI previousDestination, StateNodeUI newDestination)
-        {
-            if (previousDestination != null) { previousDestination.OnNameChanged -= ChangeDestinationLabel; }
-
-            DestinationLabel.text = newDestination != null ? newDestination.NameField.value : "---";
-
-            if (newDestination != null) { newDestination.OnNameChanged += ChangeDestinationLabel; }
         }
 
         private void ChangeDestinationLabel(string newDestinationName) => DestinationLabel.text = newDestinationName;
 
         public void RemoveChangeDestinationLabelListener()
         {
-            if (_transition.ExitConnections.Count > 0)
-            {
-                ((StateNodeUI)_transition.ExitConnections[0].Destination).OnNameChanged -= ChangeDestinationLabel;
-            }
-
-            _transition.OnDestinationChanged -= ChangeDestination;
+            ((StateNodeUI)_transition.Destination).OnNameChanged -= ChangeDestinationLabel;
         }
 
         private void MoveUp()
         {
             RemoveFromClassList("last");
-
+            
             int newIndex = parent.IndexOf(this) - 1;
-            var state = _transition.EntryConnections[0].Source;
-            var connection = state.ExitConnections[newIndex + 1];
-            state.ExitConnections.RemoveAt(newIndex + 1);
-            state.ExitConnections.Insert(newIndex, connection);
+            var state = (IStateNode)_transition.Source;
+            state.ConnectionToTransitionItemMap.Move(newIndex + 1, newIndex);
+            //var connection = state.ExitConnections[newIndex + 1];
+            //state.ExitConnections.RemoveAt(newIndex + 1);
+            //state.ExitConnections.Insert(newIndex, connection);
 
             if (newIndex == 0)
             {
@@ -98,24 +83,26 @@ namespace GZ.AnimationGraph.Editor
             RemoveFromClassList("first");
 
             int newIndex = parent.IndexOf(this) + 1;
-            var state = _transition.EntryConnections[0].Source;
-            var connection = state.ExitConnections[newIndex - 1];
-            state.ExitConnections.RemoveAt(newIndex - 1);
+            var state = (IStateNode)_transition.Source;
+            //var connection = state.ExitConnections[newIndex - 1];
+            //state.ExitConnections.RemoveAt(newIndex - 1);
 
             if (newIndex == parent.childCount - 1)
             {
                 parent.ElementAt(newIndex).RemoveFromClassList("last");
 
                 parent.Add(this);
-                state.ExitConnections.Add(connection);
+                //state.ExitConnections.Add(connection);
 
                 AddToClassList("last");
             }
             else
             {
                 parent.Insert(newIndex, this);
-                state.ExitConnections.Insert(newIndex, connection);
+                //state.ExitConnections.Insert(newIndex, connection);
             }
+
+            state.ConnectionToTransitionItemMap.Move(newIndex - 1, newIndex);
 
             if (newIndex - 1 == 0)
             {

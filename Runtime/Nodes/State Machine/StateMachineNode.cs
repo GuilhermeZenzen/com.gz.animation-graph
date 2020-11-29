@@ -13,9 +13,9 @@ namespace GZ.AnimationGraph
     {
         [SerializeReference] public Parameters Parameters = new Parameters();
         [SerializeReference] public States States = new States();
-        [SerializeReference] public List<AnyState> AnyStates = new List<AnyState>();
+        public NamedItemsGroup<AnyState> AnyStates = new NamedItemsGroup<AnyState>();
         [SerializeReference] public List<Transition> Transitions = new List<Transition>();
-
+        public IndexedDictionary<string, BaseState> test;
         [SerializeReference] public State EntryState;
 
         public bool InTransition;
@@ -37,13 +37,13 @@ namespace GZ.AnimationGraph
 
             if (!InTransition || CurrentTransition.InterruptableByAnyState)
             {
-                int index = InTransition && CurrentTransition.SourceState is AnyState ? AnyStates.IndexOf((AnyState)CurrentTransition.SourceState) : AnyStates.Count - 1;
+                int index = InTransition && CurrentTransition.SourceState is AnyState ? AnyStates.Items.Values.IndexOf((AnyState)CurrentTransition.SourceState) : AnyStates.Items.Count - 1;
 
                 for (int i = 0; i <= index; i++)
                 {
-                    AnyState anyState = AnyStates[i];
-                    StateFilterItem currentStateFilter = anyState.StateFilter.Find(f => f.State == CurrentState);
-                    StateFilterItem nextStateFilter = anyState.StateFilter.Find(f => f.State == NextState);
+                    AnyState anyState = AnyStates.Items.At(i);
+                    AnyStateFilter currentStateFilter = anyState.StateFilters.Find(f => f.State == CurrentState);
+                    AnyStateFilter nextStateFilter = anyState.StateFilters.Find(f => f.State == NextState);
 
                     if ((currentStateFilter == null || currentStateFilter.Mode == AnyStateFilterMode.NextState)
                         && (NextState == null || nextStateFilter == null || nextStateFilter.Mode == AnyStateFilterMode.CurrentState))
@@ -149,7 +149,7 @@ namespace GZ.AnimationGraph
 
         #region Transition
 
-        private Transition EvaluateTransitions(State state, int end = -1)
+        private Transition EvaluateTransitions(BaseState state, int end = -1)
         {
             if (end < 0)
             {
@@ -213,7 +213,7 @@ namespace GZ.AnimationGraph
 
             if (transition.SourceState != null && !(transition.SourceState is AnyState))
             {
-                CurrentState = transition.SourceState;
+                CurrentState = (State)transition.SourceState;
             }
 
             NextState = transition.DestinationState;
@@ -424,7 +424,7 @@ namespace GZ.AnimationGraph
 
         public State AddState(string name)
         {
-            var state = new State() { Name = NameValidation.ValidateName(name, validationName => !States.ContainsKey(validationName) && !validationName.Equals(AnyState.AnyStateName)) };
+            var state = new State() { Name = NameValidation.ValidateName(name, validationName => !States.ContainsKey(validationName)) };
 
             if (States.Count == 0)
             {
@@ -443,7 +443,7 @@ namespace GZ.AnimationGraph
         }
         public State AddState(State state)
         {
-            state.Name = NameValidation.ValidateName(state.Name, validationName => !States.ContainsKey(validationName) && !validationName.Equals(AnyState.AnyStateName));
+            state.Name = NameValidation.ValidateName(state.Name, validationName => !States.ContainsKey(validationName));
 
             if (States.Count == 0)
             {
@@ -591,9 +591,9 @@ namespace GZ.AnimationGraph
                 valueProviderCopyMap.Add(p.ValueProvider, parameterCopy.ValueProvider);
             });
 
-            var copiedStates = new Dictionary<State, State>();
+            var copiedStates = new Dictionary<BaseState, BaseState>();
             var copiedTransitions = new Dictionary<Transition, Transition>();
-            var transitionsToSetSource = new List<(Transition copy, State originalSource)>();
+            var transitionsToSetSource = new List<(Transition copy, BaseState originalSource)>();
             var transitionsToSetDestination = new List<(Transition copy, State originalDestination)>();
             var conditionsToSetValueProvider = new List<(TransitionCondition copy, IValueProvider originalValueProvider)>();
 
@@ -616,23 +616,23 @@ namespace GZ.AnimationGraph
 
             States.Values.ForEach(s =>
             {
-                State stateCopy = s.Copy(CopyTransition, valueProviderCopyMap);
+                State stateCopy = (State)s.Copy(CopyTransition, valueProviderCopyMap);
                 copy.AddState(stateCopy);
                 copiedStates.Add(s, stateCopy);
             });
-            AnyStates.ForEach(s =>
+            AnyStates.Items.Values.ForEach(s =>
             {
                 AnyState anyStateCopy = (AnyState)s.Copy(CopyTransition);
-                s.StateFilter.ForEach(f => anyStateCopy.StateFilter.Add(new StateFilterItem() { State = copiedStates[f.State], Mode = f.Mode }));
-                copy.AnyStates.Add(anyStateCopy);
+                s.StateFilters.ForEach(f => anyStateCopy.StateFilters.Add(new AnyStateFilter() { State = (State)copiedStates[f.State], Mode = f.Mode }));
+                copy.AnyStates.AddItem(s.Name, anyStateCopy);
                 copiedStates.Add(s, anyStateCopy);
             });
 
-            copy.EntryState = copiedStates[EntryState];
+            copy.EntryState = (State)copiedStates[EntryState];
 
             transitionsToSetSource.ForEach(t => t.copy.SourceState = copiedStates[t.originalSource]);
-            transitionsToSetDestination.ForEach(t => t.copy.DestinationState = copiedStates[t.originalDestination]);
-
+            transitionsToSetDestination.ForEach(t => t.copy.DestinationState = (State)copiedStates[t.originalDestination]);
+            
             return copy;
         }
 

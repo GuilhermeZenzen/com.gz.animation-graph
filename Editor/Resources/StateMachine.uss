@@ -1,17 +1,57 @@
-﻿GridBackground {
+﻿:root {
+    --primary-color: #3F3F3F;
+    --secondary-color: #2E2E2E;
+    --selected-color: #3E5F96;
+    --entry-node-color: #009045;
+    --state-node-color: #314071;
+    --state-node-dark-color: #27335a;
+    --state-node-darkest-color: #1c2542;
+    --any-state-node-color: #59007d;
+    --any-state-node-dark-color: #4b0069;
+    --any-state-node-darkest-color: #40005a;
+    --any-state-priority-manager-node-color: #e47000;
+    --parameter-node-color: #891100;
+    --parameter-node-dark-color: #790f00;
+    --parameter-node-darkest-color: #640c00;
+}
+
+StateMachineGraphView GridBackground {
     --grid-background-color: #282828;
     --line-color: rgba(193, 196, 192, 0.1);
     --thick-line-color: rgba(193, 196, 192, 0.1);
     --spacing: 10;
 }
 
-StateNodeUI #title, ParameterNodeUI #title {
+.base-state-node #title, ParameterNodeUI #title {
     height: 54px;
+}
+
+StateNodeUI.node #title {
+    background-color: var(--state-node-color);
+}
+
+StateNodeUI.node .named-node__edit-name-button {
+    background-color: var(--state-node-dark-color);
+    border-color: var(--state-node-darkest-color);
+}
+
+.node #title #title-label {
+    color: #fff;
+    -unity-font-style: bold;
 }
 
 StateNodeUI #title TextField, ParameterNodeUI #title TextField {
     max-height: 22px;
     min-width: 70px;
+}
+
+ParameterNodeUI.node #title {
+    background-color: var(--parameter-node-color);
+}
+
+ParameterNodeUI.node .named-node__edit-name-button {
+    background-color: var(--parameter-node-dark-color);
+    border-color: var(--parameter-node-darkest-color);
 }
 
 ParameterNodeUI EnumField {
@@ -101,6 +141,15 @@ AnyStateNodeUI Foldout {
     padding-right: 15px;
 }
 
+AnyStateNodeUI.node #title {
+    background-color: var(--any-state-node-color);
+}
+
+AnyStateNodeUI.node .named-node__edit-name-button {
+    background-color: var(--any-state-node-dark-color);
+    border-color: var(--any-state-node-darkest-color);
+}
+
 StateNodeUITransitionItem {
     height: 23px;
     flex-direction: row;
@@ -132,8 +181,213 @@ StateNodeUITransitionItem.last > Button.move-down {
     display: none;
 }
 
-TransitionConnectionUI.transition-connection {
+ConnectionUI.transition-connection, TransitionConnectionUI.transition-connection {
     margin: 0px;
     padding: 0px;
     border-width: 0px;
+}
+
+TransitionInspector {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 450px;
+    background-color: var(--secondary-color);
+}
+
+TransitionInspector.expanded {
+    height: 80%;
+}
+
+TransitionInspector > Toggle {
+    margin: 0;
+    padding-left: 2px;
+    background-color: var(--primary-color);
+}
+
+TransitionInspector .unity-foldout__content {
+    flex: 1;
+}
+
+TransitionInspector .content {
+    height: 100%;
+    padding: 5px;
+}
+
+TransitionInspector ResizableListView {
+    background-color: #2E2E2E;
+}
+
+TransitionInspector ResizableListView .unity-list-view__item {
+    background-color: var(--primary-color);
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 2px;
+}
+
+TransitionInspector ResizableListView .unity-list-view__item.unity-list-view__item--selected {
+    background-color: var(--selected-color);
+}
+
+TransitionInspector ResizableListView .unity-list-view__item > Label {
+    -unity-text-align: middle-center;
+}
+
+TransitionInspector ResizableListView .unity-list-view__item > Button {
+    margin: 0;
+}
+
+TransitionInspector .unity-foldout__content {
+    margin-left: 0;
+}
+
+TransitionInspector ResizableListView TransitionConditionUI.transition-condition {
+    padding-left: 20px;
+}
+
+TransitionInspector #Transitions {
+    margin-bottom: 10px;
+}
+
+TransitionInspector #Conditions {
+    margin-top: 7px;
+}
+
+TransitionConditionUI Button {
+    background-color: var(--secondary-color);
+}
+
+TransitionConditionUI NamedItemFinder {
+    flex: 1;
+    background-color: var(--secondary-color);
+    margin-left: 3px;
+}
+
+TransitionConditionUI EnumField {
+    flex: 1;
+}
+
+TransitionConditionUI EnumField > VisualElement {
+    background-color: var(--secondary-color);
+}
+
+TransitionConditionUI IntegerField {
+    width: 50px;
+    background-color: var(--secondary-color);
+}
+
+TransitionConditionUI FloatField {
+    width: 50px;
+    background-color: var(--secondary-color);
+}
+
+.base-state__transition-list {
+    margin-bottom: 5px;
+}
+
+.any-state__filters {
+    width: 200px;
+}
+
+.any-state__filters__item {
+    align-items: center;
+}
+
+.any-state__filters__item > NamedItemFinder {
+    flex: 1;
+}
+
+.any-state__filters__item > EnumField {
+    width: 108px;
+    height: 17px;
+}
+
+.base-state__transition-list .unity-list-view__item > Label {
+    flex: 1;
+    -unity-text-align: middle-center;
+}
+
+.node-item-list {
+    margin-bottom: 5px;
+}
+
+.node-item-list > .unity-foldout__content {
+    margin-left: 0;
+}
+
+.node-item-list__buttons-container {
+    flex-direction: row-reverse;
+    height: 18px;
+    padding: 0 5px 0 5px;
+}
+
+.node-item-list__buttons-container Button {
+    flex: 1;
+    height: 100%;
+    margin: 0;
+}
+
+.node-item-list__add-button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.node-item-list__remove-button {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.node-item-list__list-container {
+    margin-right: 4px;
+}
+
+.node-item-list__item {
+    padding: 2px 2px 2px 20px;
+    flex-direction: row;
+}
+
+AnyStatePriorityManagerNodeUI .node-item-list__item > NamedItemFinder {
+    flex: 1;
+}
+
+AnyStatePriorityManagerNodeUI.node #title {
+    background-color: var(--any-state-priority-manager-node-color);
+}
+
+AnyStatePriorityManagerNodeUI.node #title-label {
+    color: #fff;
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.named-node__title-container {
+    flex: 1;
+}
+
+.named-node__name-container {
+    width: 100%;
+    padding-left: 6px;
+    justify-content: space-between;
+}
+
+Label.named-node__name {
+    color: #fff;
+    font-size: 14px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+Button.named-node__edit-name-button {
+    color: #fff;
+    margin-left: 15px;
+}
+
+EntryNodeUI.node #title {
+    background-color: var(--entry-node-color);
+}
+
+EntryNodeUI.node #title-label {
+    color: #fff;
+    font-size: 14px;
+    -unity-font-style: bold;
 }

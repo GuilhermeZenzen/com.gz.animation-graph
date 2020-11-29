@@ -244,6 +244,7 @@ namespace GZ.AnimationGraph.Editor
                 if (!(n is BaseNodeUI nodeUI)) { return; }
 
                 NodeAsset nodeAsset = nodeUI.GenerateData();
+                nodeAsset.Name = nodeUI.NameField.value;
                 nodeAsset.ID = nodeUI.ID;
                 nodeAsset.Position = n.GetPosition().position;
                 nodeAsset.IsExpanded = n.expanded;

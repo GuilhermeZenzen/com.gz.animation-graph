@@ -1,6 +1,7 @@
 ﻿using GZ.AnimationGraph;
 using GZ.AnimationGraph.Editor;
 using GZ.Tools.UnityUtility;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,18 +30,35 @@ namespace GZ.AnimationGraph.Editor
         private const string _ussPath = "StateMachine.uss";
         private static StyleSheet _styleSheet;
 
-        public TransitionConnectionUI TransitionConnection { get; set; }
-        public ITransitionConnectable TransitionConnectionSource { get; set; }
-        public ITransitionConnectable TransitionConnectionTarget { get; set; }
+        public ConnectionUI Connection { get; set; }
+        public IConnectable ConnectionSource { get; set; }
+        public IConnectable ConnectionTarget { get; set; }
+
+        public ConnectionUI SelectedConnection { get; private set; }
+
+        public List<TransitionConnectionUI> TransitionConnections { get; private set; } = new List<TransitionConnectionUI>();
+
+        public TransitionInspector TransitionInspector { get; private set; }
+
+        public List<ParameterNodeUI> ParametersTemp { get; private set; } = new List<ParameterNodeUI>();
+        public NamedItemsGroup<ParameterNodeUI> Parameters { get; private set; } = new NamedItemsGroup<ParameterNodeUI>();
+
+        public NamedItemsGroup<StateNodeUI> States { get; private set; } = new NamedItemsGroup<StateNodeUI>();
+
+        public NamedItemsGroup<AnyStateNodeUI> AnyStates { get; private set; } = new NamedItemsGroup<AnyStateNodeUI>();
+
+        #region Lifecycle
 
         public static void OpenEditor()
         {
-            Editor = GetWindow<StateMachineEditor>();
-            Editor.titleContent = new GUIContent("State Machine");
+            GetWindow<StateMachineEditor>();
         }
 
         private void OnEnable()
         {
+            Editor = this;
+            titleContent = new GUIContent("State Machine");
+
             string resourcesPath = $"{AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this)).Replace($"/{nameof(StateMachineEditor)}.cs", "")}/Resources";
             _styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{resourcesPath}/{_ussPath}");
 
@@ -50,7 +68,14 @@ namespace GZ.AnimationGraph.Editor
 
             _toolbar.Add(_saveButton);
 
+            TransitionInspector = new TransitionInspector();
+            TransitionInspector.SetValueWithoutNotify(false);
+            TransitionInspector.Hide();
+
             rootVisualElement.Add(_toolbar);
+            rootVisualElement.Add(TransitionInspector);
+
+            rootVisualElement.styleSheets.Add(_styleSheet);
 
             this.SetAntiAliasing(4);
         }
@@ -67,17 +92,7 @@ namespace GZ.AnimationGraph.Editor
             IsClosing = false;
         }
 
-        private void OnDisable()
-        {
-            //Editor = null;
-            //IsClosing = true;
-
-            //rootVisualElement.Remove(GraphView);
-            //rootVisualElement.Remove(_toolbar);
-            //_styleSheet = null;
-
-            //IsClosing = false;
-        }
+        #endregion Lifecycle
 
         private void CreateGraphView()
         {
@@ -87,42 +102,117 @@ namespace GZ.AnimationGraph.Editor
             {
                 name = "State Machine Graph"
             };
-            GraphView.styleSheets.Add(_styleSheet);
+            //GraphView.styleSheets.Add(_styleSheet);
 
             GraphView.StretchToParentSize();
 
             rootVisualElement.Insert(0, GraphView);
 
-            GraphView.RegisterCallback<MouseMoveEvent>(UpdateTransitionConnection);
+            GraphView.RegisterCallback<MouseMoveEvent>(UpdateConnection);
             GraphView.RegisterCallback<MouseUpEvent>(e =>
             {
-                FinishTransitionConnection(e.button == 0);
+                FinishConnection(e.button == 0);
             });
             GraphView.RegisterCallback<KeyUpEvent>(e =>
             {
                 if (e.keyCode == KeyCode.Escape)
                 {
-                    FinishTransitionConnection();
+                    FinishConnection();
                 }
             });
         }
 
-        public TransitionConnectionUI CreateTransitionConnection(ITransitionConnectable source, ITransitionConnectable destination = null, bool enableContextualMenu = true)
+        #region Connection
+
+        public void SelectConnection(ConnectionUI connection)
         {
-            var connection = new TransitionConnectionUI(enableContextualMenu) { Source = source, Destination = destination };
-            GraphView.AddElement(connection);
-            connection.SendToBack();
+            if (SelectedConnection != null)
+            {
+                SelectedConnection.IsConnectionSelected = false;
+            }
+
+            SelectedConnection = connection;
+
+            if (SelectedConnection != null)
+            {
+                SelectedConnection.IsConnectionSelected = true;
+
+                if (SelectedConnection is TransitionConnectionUI transitionConnection)
+                {
+                    TransitionInspector.Show(transitionConnection);
+                }
+                else
+                {
+                    TransitionInspector.Hide();
+                }
+            }
+            else
+            {
+                TransitionInspector.Hide();
+            }
+        }
+
+        public ConnectionUI CreateConnection(IConnectable source, IConnectable destination = null, bool isTemporary = true)
+        {
+            ConnectionUI connection = null;
+
+            if (isTemporary)
+            {
+                connection = new ConnectionUI(false) { Source = source };
+                GraphView.AddElement(connection);
+                connection.SendToBack();
+            }
+            else
+            {
+                bool isNew;
+                (connection, isNew) = source.GetConnection(destination, true);
+                connection.Source = source;
+                connection.Destination = destination;
+
+                if (isNew)
+                {
+                    GraphView.AddElement(connection);
+                    connection.SendToBack();
+
+                    connection.Source = source;
+                    connection.Destination = destination;
+                    source.ExitConnections.Add(connection);
+                    destination.EntryConnections.Add(connection);
+
+                    source.OnExitConnect(connection);
+                    destination.OnEntryConnect(connection);
+
+                    connection.schedule.Execute(() => connection.Refresh());
+
+                    if (connection is TransitionConnectionUI transitionConnection)
+                    {
+                        TransitionConnections.Add(transitionConnection);
+                    }
+                }
+            }
 
             return connection;
         }
 
-        public void AddTransitionConnection(ITransitionConnectable connectable)
+        public void RemoveConnection(ConnectionUI connection)
         {
-            var connection = CreateTransitionConnection(connectable, null, false);
+            GraphView.RemoveElement(connection);
+
+            if (connection is TransitionConnectionUI transitionConnection)
+            {
+                TransitionConnections.Remove(transitionConnection);
+            }
+
+            SelectConnection(null);
+        }
+
+        public void AddConnection(IConnectable connectable)
+        {
+            var connection = CreateConnection(connectable, null, true);
             connection.style.top = connectable.resolvedStyle.top + connectable.resolvedStyle.height / 2;
             connection.style.left = connectable.resolvedStyle.left + connectable.resolvedStyle.width / 2;
-            TransitionConnection = connection;
-            TransitionConnectionSource = connectable;
+            Connection = connection;
+            ConnectionSource = connectable;
 
             if (_panSchedule == null)
             {
@@ -131,9 +221,9 @@ namespace GZ.AnimationGraph.Editor
             }
         }
 
-        private void UpdateTransitionConnection(MouseMoveEvent e)
+        private void UpdateConnection(MouseMoveEvent e)
         {
-            if (TransitionConnection == null) { return; }
+            if (Connection == null) { return; }
 
             _panDiff = GetEffectivePanSpeed(GraphView.ChangeCoordinatesTo(GraphView.contentContainer, e.localMousePosition));
 
@@ -147,69 +237,74 @@ namespace GZ.AnimationGraph.Editor
             }
 
             _localMousePosition = e.localMousePosition;
-            UpdateTransitionConnectionVisual(e.localMousePosition);
+            UpdateConnectionVisual(e.localMousePosition);
         }
 
-        private void UpdateTransitionConnectionVisual(Vector2 localMousePosition)
+        private void UpdateConnectionVisual(Vector2 localMousePosition)
         {
-            TransitionConnection.end = TransitionConnectionTarget != null
-                ? new Vector3(TransitionConnectionTarget.resolvedStyle.left + TransitionConnectionTarget.resolvedStyle.width / 2 - TransitionConnection.resolvedStyle.left, TransitionConnectionTarget.resolvedStyle.top + TransitionConnectionTarget.resolvedStyle.height / 2 - TransitionConnection.resolvedStyle.top)
-                : new Vector3(localMousePosition.x - TransitionConnection.worldBound.x, localMousePosition.y - TransitionConnection.worldBound.y + _toolbar.resolvedStyle.height) / GraphView.scale;
-            TransitionConnection.style.width = TransitionConnection.end.x;
-            TransitionConnection.style.height = TransitionConnection.end.y;
-            TransitionConnection.MarkDirtyRepaint();
+            Connection.end = ConnectionTarget != null
+                ? new Vector3(ConnectionTarget.resolvedStyle.left + ConnectionTarget.resolvedStyle.width / 2 - Connection.resolvedStyle.left, ConnectionTarget.resolvedStyle.top + ConnectionTarget.resolvedStyle.height / 2 - Connection.resolvedStyle.top)
+                : new Vector3(localMousePosition.x - Connection.worldBound.x, localMousePosition.y - Connection.worldBound.y + _toolbar.resolvedStyle.height) / GraphView.scale;
+            Connection.style.width = Connection.end.x;
+            Connection.style.height = Connection.end.y;
+            Connection.MarkDirtyRepaint();
         }
 
-        private void FinishTransitionConnection(bool canConnect = true)
+        public void TargetConnectable(IConnectable target)
         {
-            if (TransitionConnection == null) { return; }
+            if (ConnectionSource != null && ConnectionSource != target && ConnectionSource.CanConnect(target))
+            {
+                ConnectionTarget = target;
+            }
+        }
+
+        public void UntargetConnectable(IConnectable target)
+        {
+            if (ConnectionSource != null && ConnectionTarget == target)
+            {
+                ConnectionTarget = null;
+            }
+        }
+
+        private void FinishConnection(bool canConnect = true)
+        {
+            if (Connection == null) { return; }
 
             _panSchedule.Pause();
 
-            void Connect(TransitionConnectionUI connection, ITransitionConnectable source, ITransitionConnectable destination)
+            if (ConnectionTarget == null || !canConnect)
             {
-                connection.EnableContextualMenu();
-
-                connection.Source = source;
-                connection.Destination = destination;
-                source.ExitConnections.Add(connection);
-                destination.EntryConnections.Add(connection);
-
-                source.OnExitConnect(connection);
-                destination.OnEntryConnect(connection);
-
-                connection.Refresh();
-            }
-
-            if (TransitionConnectionTarget == null || !canConnect)
-            {
-                GraphView.RemoveElement(TransitionConnection);
-            }
-            else if ((TransitionConnectionSource is StateNodeUI || TransitionConnectionSource is AnyStateNodeUI) && TransitionConnectionTarget is StateNodeUI)
-            {
-                Node sourceNode = (Node)TransitionConnectionSource;
-                Node targetNode = (Node)TransitionConnectionTarget;
-                TransitionNodeUI newTransition = new TransitionNodeUI();
-                GraphView.AddNode(newTransition);
-                newTransition.SetPosition(new Rect((sourceNode.GetPosition().position + targetNode.GetPosition().position) / 2f, Vector2.zero));
-
-                Connect(TransitionConnection, TransitionConnectionSource, newTransition);
-
-                TransitionConnectionUI transitionToDestinationConnection = new TransitionConnectionUI(true);
-                GraphView.AddElement(transitionToDestinationConnection);
-                transitionToDestinationConnection.SendToBack();
-
-                Connect(transitionToDestinationConnection, newTransition, TransitionConnectionTarget);
+                GraphView.RemoveElement(Connection);
             }
             else
             {
-                Connect(TransitionConnection, TransitionConnectionSource, TransitionConnectionTarget);
+                GraphView.RemoveElement(Connection);
+                Connection = CreateConnection(ConnectionSource, ConnectionTarget, false);
             }
 
-            TransitionConnection = null;
-            TransitionConnectionSource = null;
-            TransitionConnectionTarget = null;
+            Connection = null;
+            ConnectionSource = null;
+            ConnectionTarget = null;
         }
+
+        #endregion Connection
+
+        #region Parameter
+
+        public void AddParameter(ParameterNodeUI parameter)
+        {
+            ParametersTemp.Add(parameter);
+        }
+
+        public void RemoveParameter(ParameterNodeUI parameter)
+        {
+            int index = ParametersTemp.IndexOf(parameter);
+            ParametersTemp.RemoveAt(index);
+        }
+
+        #endregion Parameter
+
+        #region Pan
 
         private const int k_PanAreaWidth = 100;
         private const int k_PanSpeed = 4;
@@ -227,7 +322,7 @@ namespace GZ.AnimationGraph.Editor
         {
             GraphView.viewTransform.position -= _panDiff;
 
-            UpdateTransitionConnectionVisual(GraphView.ChangeCoordinatesTo(GraphView.contentContainer, _localMousePosition));
+            UpdateConnectionVisual(GraphView.ChangeCoordinatesTo(GraphView.contentContainer, _localMousePosition));
         }
 
         private Vector2 GetEffectivePanSpeed(Vector2 mousePos)
@@ -249,20 +344,23 @@ namespace GZ.AnimationGraph.Editor
             return effectiveSpeed;
         }
 
+        #endregion Pan
+
+        #region Load & Save
+
         private void SaveStateMachine()
         {
             var stateMachine = new StateMachineNode();
             NodeUI.StateMachineNodeAsset = new StateMachineNodeAsset { Data = stateMachine };
 
             var parameterMap = new Dictionary<ParameterNodeUI, Parameter>();
-            var valueProviderMap = new Dictionary<ValueProviderOutputNodePort, IValueProvider>();
             var stateMap = new Dictionary<StateNodeUI, State>();
             var anyStateMap = new Dictionary<AnyStateNodeUI, AnyState>();
-            var transitionMap = new Dictionary<TransitionNodeUI, Transition>();
+            var transitionMap = new Dictionary<TransitionInfo, Transition>();
 
-            GraphView.Parameters.ForEach(p =>
+            Parameters.Items.Values.ForEach(p =>
             {
-                var parameter = stateMachine.AddParameter(p.NameField.value);
+                var parameter = stateMachine.AddParameter(p.Name);
                 parameter.Type = (ValueProviderType)p.ParameterTypeField.value;
                 NodeUI.StateMachineNodeAsset.ParameterMap.Add(parameter.Id, new NodeVisualInfo(p.GetPosition().position, p.expanded));
 
@@ -282,90 +380,57 @@ namespace GZ.AnimationGraph.Editor
                 }
 
                 parameterMap.Add(p, parameter);
-                valueProviderMap.Add(p.OutputPort, parameter.ValueProvider);
             });
 
-            GraphView.Transitions.ForEach(t =>
+            TransitionConnections.ForEach(transitionConnection =>
             {
-                var transition = new Transition() 
-                { 
-                    DurationType = (DurationType)t.DurationTypeField.value,
-                    Duration = t.DurationField.value, 
-                    OffsetType = (DurationType)t.OffsetTypeField.value,
-                    Offset = t.OffsetField.value, 
-                    InterruptionSource = (TransitionInterruptionSource)t.InterruptionSourceField.value, 
-                    OrderedInterruption = t.OrderedInterruptionToggle.value, 
-                    InterruptableByAnyState = t.InterruptableByAnyStateToggle.value, 
-                    PlayAfterTransition = t.PlayAfterTransitionToggle.value };
-
-                stateMachine.Transitions.Add(transition);
-                NodeUI.StateMachineNodeAsset.TransitionMap.Add(transition.Id, new NodeVisualInfo(t.GetPosition().position, t.expanded));
-                transitionMap.Add(t, transition);
-            });
-
-            GraphView.States.ForEach(s =>
-            {
-                var state = stateMachine.AddState(s.NameField.value);
-
-                s.EntryConnections.ForEach(c =>
+                transitionConnection.Transitions.ForEach(transitionInfo =>
                 {
-                    if (!(c.Source is TransitionNodeUI transitionNode)) { return; }
-
-                    Transition transition = transitionMap[transitionNode];
-                    transition.DestinationState = state;
-                    state.EntryTransitions.Add(transition);
-                });
-
-                s.ExitConnections.ForEach(c =>
-                {
-                    Transition transition = transitionMap[(TransitionNodeUI)c.Destination];
-                    transition.SourceState = state;
-                    state.ExitTransitions.Add(transition);
-                });
-
-                NodeUI.StateMachineNodeAsset.StateMap.Add(state.Id, new NodeVisualInfo(s.GetPosition().position, s.expanded));
-                stateMap.Add(s, state);
-
-                valueProviderMap.Add(s.TimeOutputPort, state.Time);
-                valueProviderMap.Add(s.PreviousTimeOutputPort, state.PreviousTime);
-                valueProviderMap.Add(s.NormalizedTimeOutputPort, state.NormalizedTime);
-                valueProviderMap.Add(s.PreviousNormalizedTimeOutputPort, state.PreviousNormalizedTime);
-            });
-
-            GraphView.Transitions.ForEach(t =>
-            {
-                t.ConditionPorts.ForEach(c =>
-                {
-                    TransitionCondition condition = new TransitionCondition();
-
-                    var edges = c.connections.ToList();
-
-                    if (edges.Count > 0)
+                    Transition transition = new Transition()
                     {
-                        condition.SetValueProvider(valueProviderMap[(ValueProviderOutputNodePort)edges[0].output]);
+                        DurationType = transitionInfo.DurationType,
+                        Duration = transitionInfo.Duration,
+                        OffsetType = transitionInfo.OffsetType,
+                        Offset = transitionInfo.Offset,
+                        InterruptionSource = transitionInfo.InterruptionSource,
+                        OrderedInterruption = transitionInfo.OrderedInterruption,
+                        InterruptableByAnyState = transitionInfo.InterruptableByAnyState,
+                        PlayAfterTransition = transitionInfo.PlayAfterTransition
+                    };
 
-                        switch (condition.ValueProvider)
-                        {
-                            case BoolProvider boolProvider:
-                                ((BoolConditionEvaluator)condition.Evaluator).ComparisonValue = (Bool)c.BoolComparisonValueField.value;
-                                break;
-                            case IntProvider intProvider:
-                                var intEvaluator = (IntConditionEvaluator)condition.Evaluator;
-                                intEvaluator.Comparison = (IntComparison)c.IntComparisonField.value;
-                                intEvaluator.ComparisonValue = c.IntComparisonValueField.value;
-                                break;
-                            case FloatProvider floatProvider:
-                                var floatEvaluator = (FloatConditionEvaluator)condition.Evaluator;
-                                floatEvaluator.Comparison = (FloatComparison)c.FloatComparisonField.value;
-                                floatEvaluator.ComparisonValue = c.FloatComparisonValueField.value;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-
-                    transitionMap[t].Conditions.Add(condition);
+                    stateMachine.Transitions.Add(transition);
+                    transitionMap.Add(transitionInfo, transition);
                 });
+            });
+
+            States.Items.Values.ForEach(stateNode =>
+            {
+                var state = stateMachine.AddState(stateNode.Name);
+
+                stateNode.ExitConnections.ForEach(connection =>
+                {
+                    ((TransitionConnectionUI)connection).Transitions.ForEach(transitionInfo =>
+                    {
+                        Transition transition = transitionMap[transitionInfo];
+                        transition.SourceState = state;
+                        state.ExitTransitions.Add(transition);
+                    });
+                });
+
+                stateNode.EntryConnections.ForEach(connection =>
+                {
+                    if (!(connection is TransitionConnectionUI transitionConnection)) { return; }
+
+                    transitionConnection.Transitions.ForEach(transitionInfo =>
+                    {
+                        Transition transition = transitionMap[transitionInfo];
+                        transition.DestinationState = state;
+                        state.EntryTransitions.Add(transition);
+                    });
+                });
+
+                NodeUI.StateMachineNodeAsset.StateMap.Add(state.Id, new NodeVisualInfo(stateNode.GetPosition().position, stateNode.expanded));
+                stateMap.Add(stateNode, state);
             });
 
             HashSet<AnyStateNodeUI> alreadyAddedAnyStates = new HashSet<AnyStateNodeUI>();
@@ -378,52 +443,113 @@ namespace GZ.AnimationGraph.Editor
             {
                 NodeUI.StateMachineNodeAsset.AnyStatePriorityManager = new NodeVisualInfo(GraphView.AnyStatePriorityManager.GetPosition().position, GraphView.AnyStatePriorityManager.expanded);
 
-                foreach (var element in GraphView.AnyStatePriorityManager.inputContainer.Children())
+                foreach (var anyStateNode in GraphView.AnyStatePriorityManager.AnyStates)
                 {
-                    if (!(element is Port port)) { continue; }
+                    if (anyStateNode == null) { continue; }
 
-                    var edges = port.connections.ToList();
+                    AnyState anyState = anyStateNode.GenerateData(stateMap);
 
-                    if (edges.Count > 0)
+                    anyStateNode.ExitConnections.ForEach(connection =>
                     {
-                        var anyStateNode = (AnyStateNodeUI)edges[0].output.node;
-                        var anyState = anyStateNode.GenerateData(stateMap);
-
-                        anyStateNode.ExitConnections.ForEach(c =>
+                        ((TransitionConnectionUI)connection).Transitions.ForEach(transitionInfo =>
                         {
-                            Transition transition = transitionMap[(TransitionNodeUI)c.Destination];
+                            Transition transition = transitionMap[transitionInfo];
                             transition.SourceState = anyState;
                             anyState.ExitTransitions.Add(transition);
                         });
+                    });
 
-                        stateMachine.AnyStates.Add(anyState);
-                        NodeUI.StateMachineNodeAsset.AnyStateMap.Add(anyState.Id, new NodeVisualInfo(anyStateNode.GetPosition().position, anyStateNode.expanded));
-                        alreadyAddedAnyStates.Add(anyStateNode);
-                        anyStateMap.Add(anyStateNode, anyState);
-                    }
-                    else
-                    {
-                        stateMachine.AnyStates.Add(null);
-                    }
+                    stateMachine.AnyStates.AddItem(anyState);
+                    NodeUI.StateMachineNodeAsset.AnyStateMap.Add(anyState.Id, new NodeVisualInfo(anyStateNode.GetPosition().position, anyStateNode.expanded));
+                    alreadyAddedAnyStates.Add(anyStateNode);
+                    anyStateMap.Add(anyStateNode, anyState);
                 }
             }
 
-            GraphView.AnyStates.ForEach(s =>
+            AnyStates.Items.Values.ForEach(anyStateNode =>
             {
-                if (alreadyAddedAnyStates.Contains(s)) { return; }
+                if (alreadyAddedAnyStates.Contains(anyStateNode)) { return; }
 
-                var anyState = s.GenerateData(stateMap);
+                AnyState anyState = anyStateNode.GenerateData(stateMap);
 
-                s.ExitConnections.ForEach(c =>
+                anyStateNode.ExitConnections.ForEach(connection =>
                 {
-                    Transition transition = transitionMap[(TransitionNodeUI)c.Destination];
-                    transition.SourceState = anyState;
-                    anyState.ExitTransitions.Add(transition);
+                    ((TransitionConnectionUI)connection).Transitions.ForEach(transitionInfo =>
+                    {
+                        Transition transition = transitionMap[transitionInfo];
+                        transition.SourceState = anyState;
+                        anyState.ExitTransitions.Add(transition);
+                    });
                 });
 
-                stateMachine.AnyStates.Add(anyState);
-                NodeUI.StateMachineNodeAsset.AnyStateMap.Add(anyState.Id, new NodeVisualInfo(s.GetPosition().position, s.expanded));
-                anyStateMap.Add(s, anyState);
+                stateMachine.AnyStates.AddItem(anyState);
+                NodeUI.StateMachineNodeAsset.AnyStateMap.Add(anyState.Id, new NodeVisualInfo(anyStateNode.GetPosition().position, anyStateNode.expanded));
+                anyStateMap.Add(anyStateNode, anyState);
+            });
+
+            TransitionConnections.ForEach(transitionConnection =>
+            {
+                transitionConnection.Transitions.ForEach(transitionInfo =>
+                {
+                    Transition transition = transitionMap[transitionInfo];
+                    transition.Conditions.Capacity = transitionInfo.Conditions.Count;
+
+                    transitionInfo.Conditions.ForEach(infoCondition =>
+                    {
+                        TransitionCondition condition = new TransitionCondition();
+
+                        if (infoCondition.ProviderSourceType == ValueProviderSourceType.State)
+                        {
+                            if (infoCondition.State != null)
+                            {
+                                State state = stateMap[infoCondition.State];
+
+                                switch (infoCondition.StateValueProvider)
+                                {
+                                    case StateValueProviders.PreviousTime:
+                                        condition.SetValueProvider(state.PreviousTime);
+                                        break;
+                                    case StateValueProviders.Time:
+                                        condition.SetValueProvider(state.Time);
+                                        break;
+                                    case StateValueProviders.PreviousNormalizedTime:
+                                        condition.SetValueProvider(state.PreviousNormalizedTime);
+                                        break;
+                                    case StateValueProviders.NormalizedTime:
+                                        condition.SetValueProvider(state.NormalizedTime);
+                                        break;
+                                }
+
+                                FloatConditionEvaluator floatEvaluator = (FloatConditionEvaluator)condition.Evaluator;
+                                floatEvaluator.Comparison = infoCondition.FloatComparison;
+                                floatEvaluator.ComparisonValue = infoCondition.FloatComparisonValue;
+                            }
+                        }
+                        else if (infoCondition.Parameter != null)
+                        {
+                            condition.SetValueProvider(parameterMap[infoCondition.Parameter].ValueProvider);
+
+                            switch (condition.Evaluator)
+                            {
+                                case BoolConditionEvaluator boolEvaluator:
+                                    boolEvaluator.ComparisonValue = infoCondition.BoolComparisonValue ? Bool.True : Bool.False;
+                                    break;
+                                case IntConditionEvaluator intEvaluator:
+                                    intEvaluator.Comparison = infoCondition.IntComparison;
+                                    intEvaluator.ComparisonValue = infoCondition.IntComparisonValue;
+                                    break;
+                                case FloatConditionEvaluator floatEvaluator:
+                                    floatEvaluator.Comparison = infoCondition.FloatComparison;
+                                    floatEvaluator.ComparisonValue = infoCondition.FloatComparisonValue;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                        transition.Conditions.Add(condition);
+                    });
+                });
             });
 
             GraphView.EntryNode.GenerateData(stateMachine, stateMap);
@@ -432,7 +558,7 @@ namespace GZ.AnimationGraph.Editor
             NodeUI.UpdateStatePorts();
         }
 
-        public void LoadData(StateMachineNodeUI stateMachineUI)
+        public void LoadStateMachine(StateMachineNodeUI stateMachineUI)
         {
             CreateGraphView();
 
@@ -441,13 +567,13 @@ namespace GZ.AnimationGraph.Editor
                 node.SetPosition(new Rect(info.Position, Vector2.zero));
                 node.expanded = info.IsExpanded;
             }
-        
+            
             NodeUI = stateMachineUI;
 
             var stateMachine = (StateMachineNode)stateMachineUI.StateMachineNodeAsset.Data;
 
             var parameterMap = new Dictionary<Parameter, ParameterNodeUI>();
-            var valueProviderMap = new Dictionary<IValueProvider, ValueProviderOutputNodePort>();
+            var valueProviderMap = new Dictionary<IValueProvider, StateMachineBaseNodeUI>();
 
             foreach (var parameter in stateMachine.Parameters.Values)
             {
@@ -456,35 +582,50 @@ namespace GZ.AnimationGraph.Editor
                 SetNodePositionAndExpansion(parameterNode, stateMachineUI.StateMachineNodeAsset.ParameterMap[parameter.Id]);
                 parameterNode.LoadData(parameter);
                 parameterMap.Add(parameter, parameterNode);
-                valueProviderMap.Add(parameter.ValueProvider, parameterNode.OutputPort);
+                valueProviderMap.Add(parameter.ValueProvider, parameterNode);
             }
 
-            var stateMap = new Dictionary<State, StateNodeUI>();
+            var stateToNodeMap = new Dictionary<State, StateNodeUI>();
+            var nodeToStateMap = new Dictionary<StateNodeUI, State>();
 
-            foreach (var state in stateMachine.States.Values)
+            for (int i = 0; i < stateMachine.States.Count; i++)
             {
+                string stateName = stateMachine.States.KeyAt(i);
+                State state = stateMachine.States.At(i);
+            
                 var stateNode = new StateNodeUI();
+                stateNode.Name = stateName;
                 GraphView.AddNode(stateNode);
                 SetNodePositionAndExpansion(stateNode, stateMachineUI.StateMachineNodeAsset.StateMap[state.Id]);
-                stateNode.LoadData(state);
-                stateMap.Add(state, stateNode);
-                valueProviderMap.Add(state.Time, stateNode.TimeOutputPort);
-                valueProviderMap.Add(state.PreviousTime, stateNode.PreviousTimeOutputPort);
-                valueProviderMap.Add(state.NormalizedTime, stateNode.NormalizedTimeOutputPort);
-                valueProviderMap.Add(state.PreviousNormalizedTime, stateNode.PreviousNormalizedTimeOutputPort);
+                stateToNodeMap.Add(state, stateNode);
+                nodeToStateMap.Add(stateNode, state);
+                valueProviderMap.Add(state.Time, stateNode);
+                valueProviderMap.Add(state.PreviousTime, stateNode);
+                valueProviderMap.Add(state.NormalizedTime, stateNode);
+                valueProviderMap.Add(state.PreviousNormalizedTime, stateNode);
             }
 
             var anyStateMap = new Dictionary<AnyState, AnyStateNodeUI>();
-
-            foreach (var anyState in stateMachine.AnyStates)
+            
+            for (int i = 0; i < stateMachine.AnyStates.Items.Count; i++)
             {
-                if (anyState == null) { continue; }
+                string anyStateName = stateMachine.AnyStates.Items.KeyAt(i);
+                AnyState anyState = stateMachine.AnyStates.Items.At(i);
+
+                //if (anyState == null) { continue; }
 
                 var anyStateNode = new AnyStateNodeUI();
+                anyStateNode.Name = anyStateName;
                 GraphView.AddNode(anyStateNode);
                 SetNodePositionAndExpansion(anyStateNode, stateMachineUI.StateMachineNodeAsset.AnyStateMap[anyState.Id]);
-                anyStateNode.LoadData(GraphView, anyState, stateMap);
+                anyStateNode.LoadData(GraphView, anyState, stateToNodeMap);
                 anyStateMap.Add(anyState, anyStateNode);
+
+                foreach (var transition in anyState.ExitTransitions)
+                {
+                    var transitionConnection = (TransitionConnectionUI)CreateConnection(anyStateNode, stateToNodeMap[transition.DestinationState], false);
+                    LoadTransitionInfo(transitionConnection.Transitions[transitionConnection.Transitions.Count - 1], transition);
+                }
             }
 
             if (NodeUI.StateMachineNodeAsset.AnyStatePriorityManager != null)
@@ -492,18 +633,74 @@ namespace GZ.AnimationGraph.Editor
                 var anyStatePriorityManagerNode = new AnyStatePriorityManagerNodeUI();
                 GraphView.AddNode(anyStatePriorityManagerNode);
                 SetNodePositionAndExpansion(anyStatePriorityManagerNode, stateMachineUI.StateMachineNodeAsset.AnyStatePriorityManager);
-                anyStatePriorityManagerNode.LoadData(GraphView, stateMachine.AnyStates, anyStateMap);
+                anyStatePriorityManagerNode.LoadData(GraphView, stateMachine.AnyStates.Items.Values, anyStateMap);
             }
 
-            var transitionMap = new Dictionary<Transition, TransitionNodeUI>();
-
-            foreach (var transition in stateMachine.Transitions)
+            foreach (var state in stateMachine.States.Values)
             {
-                var transitionNode = new TransitionNodeUI();
-                GraphView.AddNode(transitionNode);
-                SetNodePositionAndExpansion(transitionNode, stateMachineUI.StateMachineNodeAsset.TransitionMap[transition.Id]);
-                transitionNode.LoadData(GraphView, transition, stateMap, anyStateMap, valueProviderMap);
-                transitionMap.Add(transition, transitionNode);
+                foreach (var transition in state.ExitTransitions)
+                {
+                    StateNodeUI stateNode = stateToNodeMap[(State)transition.SourceState];
+                    var transitionConnection = (TransitionConnectionUI)CreateConnection(stateNode, stateToNodeMap[transition.DestinationState], false);
+                    LoadTransitionInfo(transitionConnection.Transitions[transitionConnection.Transitions.Count - 1], transition);
+                }
+            }
+
+            void LoadTransitionInfo(TransitionInfo transitionInfo, Transition transition)
+            {
+                transitionInfo.DurationType = transition.DurationType;
+                transitionInfo.Duration = transition.Duration;
+                transitionInfo.OffsetType = transition.OffsetType;
+                transitionInfo.Offset = transition.Offset;
+                transitionInfo.InterruptionSource = transition.InterruptionSource;
+                transitionInfo.OrderedInterruption = transition.OrderedInterruption;
+                transitionInfo.InterruptableByAnyState = transition.InterruptableByAnyState;
+                transitionInfo.PlayAfterTransition = transition.PlayAfterTransition;
+
+                transition.Conditions.ForEach(condition =>
+                {
+                    TransitionInfoCondition infoCondition = new TransitionInfoCondition();
+                    transitionInfo.Conditions.Add(infoCondition);
+
+                    if (condition.ValueProvider == null) { return; }
+
+                    StateMachineBaseNodeUI node = valueProviderMap[condition.ValueProvider];
+
+                    if (node is StateNodeUI stateNode)
+                    {
+                        State state = nodeToStateMap[stateNode];
+                        infoCondition.ProviderSourceType = ValueProviderSourceType.State;
+                        infoCondition.State = stateNode;
+                        infoCondition.StateValueProvider = condition.ValueProvider == state.PreviousTime ? StateValueProviders.PreviousTime
+                                                         : condition.ValueProvider == state.Time ? StateValueProviders.Time
+                                                         : condition.ValueProvider == state.NormalizedTime ? StateValueProviders.NormalizedTime
+                                                         : StateValueProviders.PreviousNormalizedTime;
+                        FloatConditionEvaluator floatEvaluator = (FloatConditionEvaluator)condition.Evaluator;
+                        infoCondition.FloatComparison = floatEvaluator.Comparison;
+                        infoCondition.FloatComparisonValue = floatEvaluator.ComparisonValue;
+                    }
+                    else
+                    {
+                        ParameterNodeUI parameterNode = (ParameterNodeUI)node;
+                        infoCondition.ProviderSourceType = ValueProviderSourceType.Parameter;
+                        infoCondition.Parameter = parameterNode;
+
+                        switch (condition.Evaluator)
+                        {
+                            case BoolConditionEvaluator boolEvaluator:
+                                infoCondition.BoolComparisonValue = boolEvaluator.ComparisonValue == Bool.True;
+                                break;
+                            case IntConditionEvaluator intEvaluator:
+                                infoCondition.IntComparison = intEvaluator.Comparison;
+                                infoCondition.IntComparisonValue = intEvaluator.ComparisonValue;
+                                break;
+                            case FloatConditionEvaluator floatEvaluator:
+                                infoCondition.FloatComparison = floatEvaluator.Comparison;
+                                infoCondition.FloatComparisonValue = floatEvaluator.ComparisonValue;
+                                break;
+                        }
+                    }
+                });
             }
 
             EntryNodeUI entryStateNode = new EntryNodeUI();
@@ -513,8 +710,12 @@ namespace GZ.AnimationGraph.Editor
             {
                 SetNodePositionAndExpansion(entryStateNode, NodeUI.StateMachineNodeAsset.EntryState);
             }
-            entryStateNode.LoadData(GraphView, stateMachine.EntryState, stateMap);
+            entryStateNode.LoadData(GraphView, stateMachine.EntryState, stateToNodeMap);
         }
+
+        #endregion Load & Save
+
+        #region Search Tree
 
         public List<SearchTreeEntry> CreateSearchTree(SearchWindowContext context)
         {
@@ -523,7 +724,6 @@ namespace GZ.AnimationGraph.Editor
                 new SearchTreeGroupEntry(new GUIContent("Create Node")),
                 new SearchTreeEntry(new GUIContent("State")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("Any State")) { level = 1 },
-                new SearchTreeEntry(new GUIContent("Transition")) { level = 1 },
                 new SearchTreeEntry(new GUIContent("Parameter")) { level = 1 },
             };
 
@@ -550,9 +750,6 @@ namespace GZ.AnimationGraph.Editor
                 case "Any State Priority Manager":
                     node = new AnyStatePriorityManagerNodeUI();
                     break;
-                case "Transition":
-                    node = new TransitionNodeUI();
-                    break;
                 case "Parameter":
                     node = new ParameterNodeUI();
                     break;
@@ -562,7 +759,19 @@ namespace GZ.AnimationGraph.Editor
 
             GraphView.AddNode(node, context.screenMousePosition);
 
+            if (node is StateNodeUI stateNode && States.Items.Count == 1)
+            {
+                CreateConnection(GraphView.EntryNode, stateNode, false);
+            }
+
+            if (node is INamedItem namedNode)
+            {
+                RenameEditor.Open(namedNode.Name, newName => namedNode.Name = newName);
+            }
+
             return true;
         }
+
+        #endregion Search Tree
     }
 }

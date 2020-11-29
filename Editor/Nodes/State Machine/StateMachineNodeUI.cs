@@ -26,7 +26,7 @@ namespace GZ.AnimationGraph.Editor
             Button openEditorButton = new Button(() =>
             {
                 StateMachineEditor.OpenEditor();
-                StateMachineEditor.Editor.LoadData(this);
+                StateMachineEditor.Editor.LoadStateMachine(this);
             }) { text = "Edit" };
 
             mainContainer.Insert(1, openEditorButton);
@@ -82,7 +82,7 @@ namespace GZ.AnimationGraph.Editor
 
         public override NodeAsset GenerateData()
         {
-            StateMachineNodeAsset.Data.Name = _nameField.value;
+            StateMachineNodeAsset.Data.Name = NameField.value;
             StateMachineNodeAsset.Data.Speed = _speedField.value;
 
             return StateMachineNodeAsset;

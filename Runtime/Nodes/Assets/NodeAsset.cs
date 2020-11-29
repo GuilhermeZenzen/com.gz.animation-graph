@@ -9,6 +9,7 @@ namespace GZ.AnimationGraph
     [Serializable]
     public class NodeAsset
     {
+        public string Name;
         public string ID;
 
         public Vector2 Position;

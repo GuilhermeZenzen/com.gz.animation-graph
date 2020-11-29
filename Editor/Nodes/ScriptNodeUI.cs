@@ -39,7 +39,7 @@ namespace GZ.AnimationGraph.Editor
 
             if (data != null)
             {
-                data.Name = _nameField.value;
+                data.Name = NameField.value;
                 data.Speed = _speedField.value;
             }
 

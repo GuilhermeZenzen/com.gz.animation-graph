@@ -32,7 +32,7 @@ namespace GZ.AnimationGraph.Editor
             _clipField.SetValueWithoutNotify(((ClipNode)nodeAsset.Data).Clip);
         }
 
-        public override NodeAsset GenerateData() => new NodeAsset { Data = new ClipNode((AnimationClip)_clipField.value) { Name = _nameField.value, Speed = _speedField.value } };
+        public override NodeAsset GenerateData() => new NodeAsset { Data = new ClipNode((AnimationClip)_clipField.value) { Name = NameField.value, Speed = _speedField.value } };
 
         public override void GenerateLinkData(NodeAsset nodeAsset, Dictionary<Node, NodeAsset> nodeMap) { }
     }
