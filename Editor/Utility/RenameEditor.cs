@@ -66,6 +66,13 @@ public class RenameEditor : EditorWindow
 
     private void Rename()
     {
+        if (_currentName.Equals(_initialName))
+        {
+            Close();
+
+            return;
+        }
+
         _renameCallback(_currentName);
         Close();
     }

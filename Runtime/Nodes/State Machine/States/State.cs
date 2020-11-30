@@ -31,6 +31,18 @@ namespace GZ.AnimationGraph
         [SerializeReference]
         public List<Transition> EntryTransitions = new List<Transition>();
 
+        [NonSerialized] public List<StateEvent> Events;
+
+        public void AddEvent(float normalizedTime, Action<State> callback)
+        {
+            if (Events == null)
+            {
+                Events = new List<StateEvent>();
+            }
+
+            Events.Add(new StateEvent { Callback = callback, NormalizedTime = normalizedTime });
+        }
+
         public override BaseState Copy(Func<Transition, Transition> transitionCopyCallback, Dictionary<IValueProvider, IValueProvider> valueProviderCopyMap = null)
         {
             State copy = (State)base.Copy(transitionCopyCallback, valueProviderCopyMap);

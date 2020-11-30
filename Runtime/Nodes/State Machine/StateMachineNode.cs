@@ -11,12 +11,13 @@ namespace GZ.AnimationGraph
     [Serializable]
     public class StateMachineNode : BaseNode, IUpdatableNode
     {
-        [SerializeReference] public Parameters Parameters = new Parameters();
+        [SerializeReference] public State EntryState;
         [SerializeReference] public States States = new States();
         public NamedItemsGroup<AnyState> AnyStates = new NamedItemsGroup<AnyState>();
+
+        [SerializeReference] public Parameters Parameters = new Parameters();
+
         [SerializeReference] public List<Transition> Transitions = new List<Transition>();
-        public IndexedDictionary<string, BaseState> test;
-        [SerializeReference] public State EntryState;
 
         public bool InTransition;
         public Transition CurrentTransition;
@@ -90,6 +91,14 @@ namespace GZ.AnimationGraph
                         state.Time.Value += deltaTime;
                         state.NormalizedTime.Value += deltaTime;
                     }
+
+                    state.Events?.ForEach(evt =>
+                    {
+                        if (state.PreviousNormalizedTime.Value < evt.NormalizedTime && state.NormalizedTime.Value >= evt.NormalizedTime)
+                        {
+                            evt.Callback(state);
+                        }
+                    });
                 }
             }
 
