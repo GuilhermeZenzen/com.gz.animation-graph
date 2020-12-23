@@ -11,7 +11,5 @@ namespace GZ.AnimationGraph
         public string Name;
 
         public List<StateEventAsset> Events = new List<StateEventAsset>();
-
-        public bool IsExpanded = true;
     }
 }

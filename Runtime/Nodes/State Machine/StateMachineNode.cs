@@ -76,27 +76,42 @@ namespace GZ.AnimationGraph
                 if (Playable.GetInputWeight(i) > 0f)
                 {
                     State state = States.At(i);
-                    state.PreviousTime.Value = state.Time.Value;
-                    state.PreviousNormalizedTime.Value = state.NormalizedTime.Value;
+                    //state.PreviousTime.Value = state.Time.Value;
+                    //state.PreviousNormalizedTime.Value = state.NormalizedTime.Value;
                     BaseNode node = InputPorts[i].Link != null ? InputPorts[i].Link.OutputPort.Node : null;
 
-                    if (node != null)
+                    if (!state.ManualTime)
                     {
-                        float trueDeltaTime = deltaTime * (node.RawDuration / node.Duration);
-                        state.Time.Value += trueDeltaTime;
-                        state.NormalizedTime.Value += trueDeltaTime / node.RawDuration;
-                    }
-                    else
-                    {
-                        state.Time.Value += deltaTime;
-                        state.NormalizedTime.Value += deltaTime;
+                        if (node != null)
+                        {
+                            float trueDeltaTime = deltaTime * (node.RawDuration / node.Duration);
+                            state.PassTime(trueDeltaTime);
+                            state.PassNormalizedTime(trueDeltaTime / node.RawDuration);
+                            //state.Time.Value += trueDeltaTime;
+                            //state.NormalizedTime.Value += trueDeltaTime / node.RawDuration;
+                        }
+                        else
+                        {
+                            state.PassTime(deltaTime);
+                            state.PassNormalizedTime(deltaTime);
+                            //state.Time.Value += deltaTime;
+                            //state.NormalizedTime.Value += deltaTime;
+                        }
                     }
 
                     state.Events?.ForEach(evt =>
                     {
-                        if (state.PreviousNormalizedTime.Value < evt.NormalizedTime && state.NormalizedTime.Value >= evt.NormalizedTime)
+                        if (state.PreviousNormalizedTime.Value <= evt.NormalizedTime && state.NormalizedTime.Value >= evt.NormalizedTime)
                         {
-                            evt.Callback(state);
+                            evt.Callback(evt.NormalizedTime, state);
+                        }
+                    });
+
+                    state.ContinousEvents?.ForEach(evt =>
+                    {
+                        if (state.NormalizedTime.Value >= evt.StartTime && (state.NormalizedTime.Value <= evt.EndTime || state.PreviousNormalizedTime.Value <= evt.EndTime))
+                        {
+                            evt.Callback(state, evt);
                         }
                     });
                 }

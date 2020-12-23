@@ -28,19 +28,50 @@ namespace GZ.AnimationGraph
             }
         }
 
+        public bool ManualTime { get; set; } = false;
+
         [SerializeReference]
         public List<Transition> EntryTransitions = new List<Transition>();
 
         [NonSerialized] public List<StateEvent> Events;
+        [NonSerialized] public List<StateContinousEvent> ContinousEvents;
 
-        public void AddEvent(float normalizedTime, Action<State> callback)
+        public void SetTime(float time)
         {
-            if (Events == null)
-            {
-                Events = new List<StateEvent>();
-            }
+            PreviousTime.Value = Time.Value;
+            Time.Value = time;
+        }
+
+        public void PassTime(float timeDelta)
+        {
+            PreviousTime.Value = Time.Value;
+            Time.Value += timeDelta;
+        }
+
+        public void SetNormalizedTime(float normalizedTime)
+        {
+            PreviousNormalizedTime.Value = NormalizedTime.Value;
+            NormalizedTime.Value = normalizedTime;
+        }
+
+        public void PassNormalizedTime(float normalizedTimeDelta)
+        {
+            PreviousNormalizedTime.Value = NormalizedTime.Value;
+            NormalizedTime.Value += normalizedTimeDelta;
+        }
+
+        public void AddEvent(float normalizedTime, Action<float, State> callback)
+        {
+            Events ??= new List<StateEvent>();
 
             Events.Add(new StateEvent { Callback = callback, NormalizedTime = normalizedTime });
+        }
+
+        public void AddContinousEvent(float startTime, float endTime, Action<State, StateContinousEvent> callback)
+        {
+            ContinousEvents ??= new List<StateContinousEvent>();
+
+            ContinousEvents.Add(new StateContinousEvent { StartTime = startTime, EndTime = endTime, Callback = callback });
         }
 
         public override BaseState Copy(Func<Transition, Transition> transitionCopyCallback, Dictionary<IValueProvider, IValueProvider> valueProviderCopyMap = null)

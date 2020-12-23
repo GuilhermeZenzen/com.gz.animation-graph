@@ -7,7 +7,7 @@ namespace GZ.AnimationGraph
 {
     public class StateEvent
     {
-        public Action<State> Callback;
+        public Action<float, State> Callback;
         public float NormalizedTime;
     }
 }

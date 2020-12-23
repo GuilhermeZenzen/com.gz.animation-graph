@@ -1,5 +1,6 @@
 {
     "name": "com.gz.animation-graph.Editor",
+    "rootNamespace": "GZ.AnimationGraph.Editor",
     "references": [
         "GUID:dd976ea618259f94086741182982b10b",
         "GUID:ba78d9481524ef641a911bc2e85acd33",

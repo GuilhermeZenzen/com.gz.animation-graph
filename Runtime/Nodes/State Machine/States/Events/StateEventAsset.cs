@@ -4,9 +4,18 @@
     public class StateEventAsset
     {
         public string Name = "Event";
-        public float NormalizedTime;
+        public EventType Type;
 
-        public bool IsExpanded = true;
+        public float TriggerTime;
+
+        public float StartTime;
+        public float EndTime;
+    }
+
+    public enum EventType
+    {
+        Trigger,
+        Continous
     }
 
     public enum TimeType

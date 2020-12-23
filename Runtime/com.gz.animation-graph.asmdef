@@ -1,5 +1,6 @@
 {
     "name": "com.gz.animation-graph",
+    "rootNamespace": "GZ.AnimationGraph",
     "references": [
         "GUID:dd976ea618259f94086741182982b10b"
     ],
