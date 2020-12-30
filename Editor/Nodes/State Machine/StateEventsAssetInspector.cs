@@ -153,7 +153,7 @@ namespace GZ.AnimationGraph.Editor
         {
             _list.DoLayoutList();
 
-            EditorUtility.SetDirty(target);
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

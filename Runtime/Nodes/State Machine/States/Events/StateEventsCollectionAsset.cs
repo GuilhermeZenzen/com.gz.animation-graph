@@ -11,7 +11,7 @@ namespace GZ.AnimationGraph
     {
         public List<StateEventsAsset> StatesEvents = new List<StateEventsAsset>();
 
-        public void LoadEvents(StateMachineNode stateMachine, IReadOnlyDictionary<string, Action<float, State>> eventCallbacks, IReadOnlyDictionary<string, Action<State, StateContinousEvent>> continousEventCallbacks)
+        public void LoadEvents(StateMachineNode stateMachine, IReadOnlyDictionary<string, Action<float, State>> eventCallbacks, IReadOnlyDictionary<string, Action<State, StateContinousEvent>> continousEventCallbacks = null)
         {
             StatesEvents.ForEach(eventState =>
             {
@@ -19,25 +19,54 @@ namespace GZ.AnimationGraph
 
                 if (!stateMachine.States.TryGetValue(eventState.Name, out var state)) { return; }
 
-                eventState.Events.ForEach(evt =>
+                switch ((eventCallbacks, continousEventCallbacks))
                 {
-                    //Assert.IsTrue(callbacks.ContainsKey(evt.Name), $"The passed callbacks doesn't contain the callback required by the event {evt.Name} from the asset {name}");
+                    case ({ }, null):
+                        eventState.Events.ForEach(evt =>
+                        {
+                            if (evt.Type == EventType.Trigger)
+                            {
+                                if (eventCallbacks != null && eventCallbacks.TryGetValue(evt.Name, out var callback))
+                                {
+                                    state.AddEvent(evt.TriggerTime, eventCallbacks[evt.Name]);
+                                }
+                            }
+                        });
+                        break;
+                    case (null, { }):
+                        eventState.Events.ForEach(evt =>
+                        {
+                            if (evt.Type == EventType.Continous)
+                            {
+                                if (continousEventCallbacks.TryGetValue(evt.Name, out var continousCallback))
+                                {
+                                    state.AddContinousEvent(evt.StartTime, evt.EndTime, continousCallback);
+                                }
+                            }
+                        });
+                        break;
+                    case ({ }, { }):
+                        eventState.Events.ForEach(evt =>
+                        {
+                            //Assert.IsTrue(callbacks.ContainsKey(evt.Name), $"The passed callbacks doesn't contain the callback required by the event {evt.Name} from the asset {name}");
 
-                    if (evt.Type == EventType.Trigger)
-                    {
-                        if (eventCallbacks.TryGetValue(evt.Name, out var callback))
-                        {
-                            state.AddEvent(evt.TriggerTime, eventCallbacks[evt.Name]);
-                        }
-                    }
-                    else
-                    {
-                        if (continousEventCallbacks.TryGetValue(evt.Name, out var continousCallback))
-                        {
-                            state.AddContinousEvent(evt.StartTime, evt.EndTime, continousCallback);
-                        }
-                    }
-                });
+                            if (evt.Type == EventType.Trigger)
+                            {
+                                if (eventCallbacks != null && eventCallbacks.TryGetValue(evt.Name, out var callback))
+                                {
+                                    state.AddEvent(evt.TriggerTime, eventCallbacks[evt.Name]);
+                                }
+                            }
+                            else
+                            {
+                                if (continousEventCallbacks.TryGetValue(evt.Name, out var continousCallback))
+                                {
+                                    state.AddContinousEvent(evt.StartTime, evt.EndTime, continousCallback);
+                                }
+                            }
+                        });
+                        break;
+                }
             });
         }
     }

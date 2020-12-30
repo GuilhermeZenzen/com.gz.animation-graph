@@ -27,7 +27,7 @@ namespace GZ.AnimationGraph.Editor
         private void OnEnable()
         {
             var overrider = (AnimationGraphOverrider)target;
-            overrider.Overrides.LoadDictionary();
+            //overrider.Overrides.OnAfterDeserialize();
 
             UpdateOverrides(overrider);
         }
